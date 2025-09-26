@@ -86,7 +86,7 @@ unsafe fn mul_spectrum_in_place_f32_impl(
             let v0 = _mm_loadu_si64(dst as *const Complex<f32> as *const _);
             let mut v1 = _mm_loadu_si64(kernel as *const Complex<f32> as *const _);
 
-            v1 = _mm_xor_epi32(v1, _mm_castps_si128(conj_factors));
+            v1 = _mm_xor_si128(v1, _mm_castps_si128(conj_factors));
 
             let d0 = _mm_mul_ps(
                 sse_mul_complex(_mm_castsi128_ps(v0), _mm_castsi128_ps(v1)),
