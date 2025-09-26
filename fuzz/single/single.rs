@@ -1,7 +1,7 @@
 #![no_main]
 
 use arbitrary::Arbitrary;
-use cross_correlate::{Correlate, CrossCorrelateError, CrossCorrelateMode, FftExecutor};
+use cross_correlate::{Correlate, CrossCorrelateError, CrossCorrelationMode, FftExecutor};
 use libfuzzer_sys::fuzz_target;
 use rustfft::num_complex::Complex;
 use rustfft::{Fft, FftPlanner};
@@ -36,9 +36,9 @@ fuzz_target!(|data: Input| {
         return;
     }
     let mode = match data.mode % 3 {
-        0 => CrossCorrelateMode::Valid,
-        1 => CrossCorrelateMode::Same,
-        _ => CrossCorrelateMode::Full,
+        0 => CrossCorrelationMode::Valid,
+        1 => CrossCorrelationMode::Same,
+        _ => CrossCorrelationMode::Full,
     };
 
     let src = vec![data.buffer_data; data.buffer_width as usize];
