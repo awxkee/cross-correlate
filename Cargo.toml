@@ -1,0 +1,44 @@
+[workspace]
+members = ["app"]
+
+[package]
+name = "cross_correlate"
+version = "0.1.0"
+edition = "2024"
+description = "Signal cross-correlation"
+readme = "./README.md"
+keywords = ["cross-correlate", "dsp"]
+license = "BSD-3-Clause OR Apache 2.0"
+authors = ["Radzivon Bartoshyk"]
+documentation = "https://github.com/awxkee/libblur"
+categories = ["science", "algorithms"]
+homepage = "https://github.com/awxkee/cross-correlate"
+repository = "https://github.com/awxkee/cross-correlate.git"
+exclude = ["*.jpg", "./assets/*", "*.png"]
+rust-version = "1.85.0"
+include = ["/src/", "/README.md", "/LICENSE.md", "/LICENSE-APACHE.md"]
+
+[dependencies]
+num-complex = "0.4"
+num-traits = "0.2"
+
+[features]
+default = ["neon", "avx", "sse"]
+# Enables Aarch64 NEON support
+neon = []
+# Aarch64 FCMA feature, requires `nightly`
+fcma = ["neon"]
+# Enables AVX2 support
+avx = []
+# Enables SSE4.2 support
+sse = []
+
+[package.metadata.docs.rs]
+# To build locally:
+# RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --no-deps --open --manifest-path ./Cargo.toml
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[profile.profiling]
+inherits = "release"
+debug = true

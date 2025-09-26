@@ -1,0 +1,37 @@
+[package]
+name = "app-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1.4", features = ["derive"] }
+rustfft = "6.4"
+
+[dependencies.cross_correlate]
+path = ".."
+default-features = false
+
+[[bin]]
+name = "single"
+path = "single/single.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "double"
+path = "double/double.rs"
+test = false
+doc = false
+bench = false
+
+[features]
+fcma = ["cross_correlate/fcma"]
+sse = ["cross_correlate/sse"]
+neon = ["cross_correlate/neon"]
+avx = ["cross_correlate/avx"]
