@@ -30,7 +30,7 @@ use crate::double::CrossCorrelateDouble;
 use crate::double_complex::CrossCorrelateComplexDouble;
 use crate::single::CrossCorrelateSingle;
 use crate::single_complex::CrossCorrelateComplexSingle;
-use crate::{CrossCorrelateError, CrossCorrelateMode};
+use crate::{CrossCorrelateError, CrossCorrelationMode};
 use num_complex::Complex;
 use std::fmt::Debug;
 
@@ -82,7 +82,7 @@ impl Correlate {
     ///
     /// # Arguments
     ///
-    /// * `mode` - The [`CrossCorrelateMode`] that determines the shape of the output
+    /// * `mode` - The [`CrossCorrelationMode`] that determines the shape of the output
     ///   (e.g. `Full`, `Same`, `Valid`).
     /// * `fft_forward` - A boxed [`FftExecutor`] used for the forward transform.
     ///   Typically, created using `rustfft::FftPlanner::plan_fft_forward`.
@@ -101,7 +101,7 @@ impl Correlate {
     /// - The FFT size computed from the input buffers does not match the provided executors.
     ///
     pub fn create_real_f32(
-        mode: CrossCorrelateMode,
+        mode: CrossCorrelationMode,
         fft_forward: Box<dyn FftExecutor<f32> + Send + Sync>,
         fft_inverse: Box<dyn FftExecutor<f32> + Send + Sync>,
     ) -> Result<Box<dyn CrossCorrelate<f32> + Sync + Send>, CrossCorrelateError> {
@@ -180,7 +180,7 @@ impl Correlate {
     ///
     /// # Arguments
     ///
-    /// * `mode` - The [`CrossCorrelateMode`] that determines the shape of the output
+    /// * `mode` - The [`CrossCorrelationMode`] that determines the shape of the output
     ///   (e.g. `Full`, `Same`, `Valid`).
     /// * `fft_forward` - A boxed [`FftExecutor`] used for the forward transform.
     ///   Typically, created using `rustfft::FftPlanner::plan_fft_forward`.
@@ -199,7 +199,7 @@ impl Correlate {
     /// - The FFT size computed from the input buffers does not match the provided executors.
     ///
     pub fn create_complex_f32(
-        mode: CrossCorrelateMode,
+        mode: CrossCorrelationMode,
         fft_forward: Box<dyn FftExecutor<f32> + Send + Sync>,
         fft_inverse: Box<dyn FftExecutor<f32> + Send + Sync>,
     ) -> Result<Box<dyn CrossCorrelate<Complex<f32>> + Sync + Send>, CrossCorrelateError> {
@@ -278,7 +278,7 @@ impl Correlate {
     ///
     /// # Arguments
     ///
-    /// * `mode` - The [`CrossCorrelateMode`] that determines the shape of the output
+    /// * `mode` - The [`CrossCorrelationMode`] that determines the shape of the output
     ///   (e.g. `Full`, `Same`, `Valid`).
     /// * `fft_forward` - A boxed [`FftExecutor`] used for the forward transform.
     ///   Typically, created using `rustfft::FftPlanner::plan_fft_forward`.
@@ -297,7 +297,7 @@ impl Correlate {
     /// - The FFT size computed from the input buffers does not match the provided executors.
     ///
     pub fn create_real_f64(
-        mode: CrossCorrelateMode,
+        mode: CrossCorrelationMode,
         fft_forward: Box<dyn FftExecutor<f64> + Send + Sync>,
         fft_inverse: Box<dyn FftExecutor<f64> + Send + Sync>,
     ) -> Result<Box<dyn CrossCorrelate<f64> + Sync + Send>, CrossCorrelateError> {
@@ -376,7 +376,7 @@ impl Correlate {
     ///
     /// # Arguments
     ///
-    /// * `mode` - The [`CrossCorrelateMode`] that determines the shape of the output
+    /// * `mode` - The [`CrossCorrelationMode`] that determines the shape of the output
     ///   (e.g. `Full`, `Same`, `Valid`).
     /// * `fft_forward` - A boxed [`FftExecutor`] used for the forward transform.
     ///   Typically, created using `rustfft::FftPlanner::plan_fft_forward`.
@@ -395,7 +395,7 @@ impl Correlate {
     /// - The FFT size computed from the input buffers does not match the provided executors.
     ///
     pub fn create_complex_f64(
-        mode: CrossCorrelateMode,
+        mode: CrossCorrelationMode,
         fft_forward: Box<dyn FftExecutor<f64> + Send + Sync>,
         fft_inverse: Box<dyn FftExecutor<f64> + Send + Sync>,
     ) -> Result<Box<dyn CrossCorrelate<Complex<f64>> + Sync + Send>, CrossCorrelateError> {

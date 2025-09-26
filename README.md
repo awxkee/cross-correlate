@@ -14,7 +14,7 @@ SIMD-friendly design (with optional optimizations for AVX2/NEON).
 ];
 let dst = vec![0.31421, 0.421, 0.653, 0.121];
 
-let mode = CrossCorrelateMode::Full;
+let mode = CrossCorrelationMode::Full;
 
 // determine FFT size.
 let fft_size = mode.fft_size(&src, &dst);

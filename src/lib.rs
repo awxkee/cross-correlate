@@ -26,6 +26,13 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#![deny(unreachable_pub)]
+#![deny(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::print_literal,
+    clippy::print_in_format_impl
+)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(
     all(feature = "fcma", target_arch = "aarch64"),
@@ -52,4 +59,4 @@ mod sse;
 pub use cross_correlate::{Correlate, CrossCorrelate, FftExecutor};
 pub use error::CrossCorrelateError;
 pub use fft::fft_next_good_size;
-pub use mode::CrossCorrelateMode;
+pub use mode::CrossCorrelationMode;

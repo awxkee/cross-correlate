@@ -27,7 +27,7 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use cross_correlate::{
-    Correlate, CrossCorrelateError, CrossCorrelateMode, FftExecutor, fft_next_good_size,
+    Correlate, CrossCorrelateError, CrossCorrelationMode, FftExecutor, fft_next_good_size,
 };
 use rustfft::num_complex::Complex;
 use rustfft::{Fft, FftPlanner};
@@ -68,7 +68,7 @@ fn main() {
     ];
     let dst = vec![0.31421, 0.421, 0.653, 0.121];
 
-    let mode = CrossCorrelateMode::Valid;
+    let mode = CrossCorrelationMode::Valid;
 
     let fft_size = mode.fft_size(&src, &dst);
 

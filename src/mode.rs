@@ -33,7 +33,7 @@ use crate::fft_next_good_size;
 /// The mode determines how much of the cross-correlation result is returned
 /// relative to the input sequences.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
-pub enum CrossCorrelateMode {
+pub enum CrossCorrelationMode {
     /// Only fully overlapping elements are returned
     Valid,
     /// Output has the same length as the largest input
@@ -43,18 +43,18 @@ pub enum CrossCorrelateMode {
     Full,
 }
 
-impl CrossCorrelateMode {
+impl CrossCorrelationMode {
     /// Compute the output length for a cross-correlation operation.
     ///
     /// The length of the correlation result depends on the chosen
-    /// [`CrossCorrelateMode`] and the lengths of the input sequences.
+    /// [`CrossCorrelationMode`] and the lengths of the input sequences.
     pub fn get_size<V>(self, buffer: &[V], other: &[V]) -> usize {
         match self {
-            CrossCorrelateMode::Valid => {
+            CrossCorrelationMode::Valid => {
                 buffer.len().max(other.len()) - buffer.len().min(other.len()) + 1
             }
-            CrossCorrelateMode::Same => buffer.len().max(other.len()),
-            CrossCorrelateMode::Full => buffer.len() + other.len() - 1,
+            CrossCorrelationMode::Same => buffer.len().max(other.len()),
+            CrossCorrelationMode::Full => buffer.len() + other.len() - 1,
         }
     }
 

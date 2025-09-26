@@ -30,14 +30,14 @@ use crate::cross_correlate::FftExecutor;
 use crate::error::try_vec;
 use crate::pad::pad_signal;
 use crate::spectrum::SpectrumMultiplier;
-use crate::{CrossCorrelate, CrossCorrelateError, CrossCorrelateMode};
+use crate::{CrossCorrelate, CrossCorrelateError, CrossCorrelationMode};
 use num_complex::Complex;
 
 pub(crate) struct CrossCorrelateComplexSingle {
     pub(crate) fft_forward: Box<dyn FftExecutor<f32> + Send + Sync>,
     pub(crate) fft_inverse: Box<dyn FftExecutor<f32> + Send + Sync>,
     pub(crate) multiplier: Box<dyn SpectrumMultiplier<f32> + Send + Sync>,
-    pub(crate) mode: CrossCorrelateMode,
+    pub(crate) mode: CrossCorrelationMode,
 }
 
 impl CrossCorrelate<Complex<f32>> for CrossCorrelateComplexSingle {
@@ -84,16 +84,16 @@ impl CrossCorrelate<Complex<f32>> for CrossCorrelateComplexSingle {
         let lag = other.len() - 1;
         let offset = fft_size - lag;
         match self.mode {
-            CrossCorrelateMode::Full => {
+            CrossCorrelationMode::Full => {
                 for (i, dst) in output.iter_mut().enumerate() {
                     *dst = unsafe { *padded_src.get_unchecked((i + offset) % fft_size) }
                 }
             }
-            CrossCorrelateMode::Valid | CrossCorrelateMode::Same => {
+            CrossCorrelationMode::Valid | CrossCorrelationMode::Same => {
                 let start = match self.mode {
-                    CrossCorrelateMode::Valid => other.len() - 1,
-                    CrossCorrelateMode::Same => (other.len() - 1) / 2,
-                    CrossCorrelateMode::Full => unreachable!(),
+                    CrossCorrelationMode::Valid => other.len() - 1,
+                    CrossCorrelationMode::Same => (other.len() - 1) / 2,
+                    CrossCorrelationMode::Full => unreachable!(),
                 };
                 for (i, dst) in output.iter_mut().enumerate() {
                     *dst = unsafe { *padded_src.get_unchecked((start + i + offset) % fft_size) };
