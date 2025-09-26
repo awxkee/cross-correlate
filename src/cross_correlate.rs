@@ -27,7 +27,9 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::double::CrossCorrelateDouble;
+use crate::double_complex::CrossCorrelateComplexDouble;
 use crate::single::CrossCorrelateSingle;
+use crate::single_complex::CrossCorrelateComplexSingle;
 use crate::{CrossCorrelateError, CrossCorrelateMode};
 use num_complex::Complex;
 use std::fmt::Debug;
@@ -169,6 +171,104 @@ impl Correlate {
         }
     }
 
+    /// Creates a cross-correlation engine for complex `f32` sequences.
+    ///
+    /// This function constructs a `CrossCorrelate` implementation that operates
+    /// on `Complex<f32>` data, using the provided FFT executors for forward and
+    /// inverse transforms. It supports different correlation modes (`Full`, `Same`, `Valid`)
+    /// as specified by `mode`.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The [`CrossCorrelateMode`] that determines the shape of the output
+    ///   (e.g. `Full`, `Same`, `Valid`).
+    /// * `fft_forward` - A boxed [`FftExecutor`] used for the forward transform.
+    ///   Typically, created using `rustfft::FftPlanner::plan_fft_forward`.
+    /// * `fft_inverse` - A boxed [`FftExecutor`] used for the inverse transform.
+    ///   Typically, created using `rustfft::FftPlanner::plan_fft_inverse`.
+    ///
+    /// # Returns
+    ///
+    /// A boxed [`CrossCorrelate`] instance implementing cross-correlation on complex `f32` signals,
+    /// or an error if the FFT sizes do not match.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CrossCorrelateError`] if:
+    /// - The forward and inverse FFT executors have mismatched lengths.
+    /// - The FFT size computed from the input buffers does not match the provided executors.
+    ///
+    pub fn create_complex_f32(
+        mode: CrossCorrelateMode,
+        fft_forward: Box<dyn FftExecutor<f32> + Send + Sync>,
+        fft_inverse: Box<dyn FftExecutor<f32> + Send + Sync>,
+    ) -> Result<Box<dyn CrossCorrelate<Complex<f32>> + Sync + Send>, CrossCorrelateError> {
+        if fft_forward.length() != fft_inverse.length() {
+            return Err(CrossCorrelateError::FftSizesDoNotMatch(
+                fft_forward.length(),
+                fft_inverse.length(),
+            ));
+        }
+        #[cfg(all(target_arch = "x86_64", feature = "avx"))]
+        {
+            if std::arch::is_x86_feature_detected!("avx2")
+                && std::arch::is_x86_feature_detected!("fma")
+            {
+                use crate::avx::MulSpectrumSingleAvxFma;
+                return Ok(Box::new(CrossCorrelateComplexSingle {
+                    fft_forward,
+                    fft_inverse,
+                    multiplier: Box::new(MulSpectrumSingleAvxFma::default()),
+                    mode,
+                }));
+            }
+        }
+        #[cfg(all(target_arch = "x86_64", feature = "sse"))]
+        {
+            if std::arch::is_x86_feature_detected!("sse4.2") {
+                use crate::sse::MulSpectrumSingleSse4_2;
+                return Ok(Box::new(CrossCorrelateComplexSingle {
+                    fft_forward,
+                    fft_inverse,
+                    multiplier: Box::new(MulSpectrumSingleSse4_2::default()),
+                    mode,
+                }));
+            }
+        }
+        #[cfg(all(target_arch = "aarch64", feature = "fcma"))]
+        {
+            if std::arch::is_aarch64_feature_detected!("fcma") {
+                use crate::neon::SpectrumMulSingleFcma;
+                return Ok(Box::new(CrossCorrelateComplexSingle {
+                    fft_forward,
+                    fft_inverse,
+                    multiplier: Box::new(SpectrumMulSingleFcma::default()),
+                    mode,
+                }));
+            }
+        }
+        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
+        {
+            use crate::neon::SpectrumMulSingleNeon;
+            Ok(Box::new(CrossCorrelateComplexSingle {
+                fft_forward,
+                fft_inverse,
+                multiplier: Box::new(SpectrumMulSingleNeon::default()),
+                mode,
+            }))
+        }
+        #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
+        {
+            use crate::spectrum::SpectrumMultiplierSingle;
+            Ok(Box::new(CrossCorrelateComplexSingle {
+                fft_forward,
+                fft_inverse,
+                multiplier: Box::new(SpectrumMultiplierSingle::default()),
+                mode,
+            }))
+        }
+    }
+
     /// Create a real-valued cross-correlator using FFT.
     ///
     /// This function constructs a cross-correlator for `f64` signals, based on the
@@ -187,7 +287,7 @@ impl Correlate {
     ///
     /// # Returns
     ///
-    /// A boxed [`CrossCorrelate`] instance implementing cross-correlation on `f32` signals,
+    /// A boxed [`CrossCorrelate`] instance implementing cross-correlation on `f64` signals,
     /// or an error if the FFT sizes do not match.
     ///
     /// # Errors
@@ -259,6 +359,104 @@ impl Correlate {
         {
             use crate::spectrum::SpectrumMultiplierDouble;
             Ok(Box::new(CrossCorrelateDouble {
+                fft_forward,
+                fft_inverse,
+                multiplier: Box::new(SpectrumMultiplierDouble::default()),
+                mode,
+            }))
+        }
+    }
+
+    /// Create a real-valued cross-correlator using FFT.
+    ///
+    /// This function constructs a cross-correlator for complex `f64` signals, based on the
+    /// provided correlation mode and FFT executors. It uses the forward FFT to
+    /// transform both input signals, multiplies one by the conjugate spectrum of the other,
+    /// and then applies the inverse FFT to obtain the cross-correlation result.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The [`CrossCorrelateMode`] that determines the shape of the output
+    ///   (e.g. `Full`, `Same`, `Valid`).
+    /// * `fft_forward` - A boxed [`FftExecutor`] used for the forward transform.
+    ///   Typically, created using `rustfft::FftPlanner::plan_fft_forward`.
+    /// * `fft_inverse` - A boxed [`FftExecutor`] used for the inverse transform.
+    ///   Typically, created using `rustfft::FftPlanner::plan_fft_inverse`.
+    ///
+    /// # Returns
+    ///
+    /// A boxed [`CrossCorrelate`] instance implementing cross-correlation on complex `f64` signals,
+    /// or an error if the FFT sizes do not match.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CrossCorrelateError`] if:
+    /// - The forward and inverse FFT executors have mismatched lengths.
+    /// - The FFT size computed from the input buffers does not match the provided executors.
+    ///
+    pub fn create_complex_f64(
+        mode: CrossCorrelateMode,
+        fft_forward: Box<dyn FftExecutor<f64> + Send + Sync>,
+        fft_inverse: Box<dyn FftExecutor<f64> + Send + Sync>,
+    ) -> Result<Box<dyn CrossCorrelate<Complex<f64>> + Sync + Send>, CrossCorrelateError> {
+        if fft_forward.length() != fft_inverse.length() {
+            return Err(CrossCorrelateError::FftSizesDoNotMatch(
+                fft_forward.length(),
+                fft_inverse.length(),
+            ));
+        }
+        #[cfg(all(target_arch = "x86_64", feature = "avx"))]
+        {
+            if std::arch::is_x86_feature_detected!("avx2")
+                && std::arch::is_x86_feature_detected!("fma")
+            {
+                use crate::avx::MulSpectrumDoubleAvxFma;
+                return Ok(Box::new(CrossCorrelateComplexDouble {
+                    fft_forward,
+                    fft_inverse,
+                    multiplier: Box::new(MulSpectrumDoubleAvxFma::default()),
+                    mode,
+                }));
+            }
+        }
+        #[cfg(all(target_arch = "x86_64", feature = "sse"))]
+        {
+            if std::arch::is_x86_feature_detected!("sse4.2") {
+                use crate::sse::MulSpectrumDoubleSse4_2;
+                return Ok(Box::new(CrossCorrelateComplexDouble {
+                    fft_forward,
+                    fft_inverse,
+                    multiplier: Box::new(MulSpectrumDoubleSse4_2::default()),
+                    mode,
+                }));
+            }
+        }
+        #[cfg(all(target_arch = "aarch64", feature = "fcma"))]
+        {
+            if std::arch::is_aarch64_feature_detected!("fcma") {
+                use crate::neon::SpectrumMulDoubleFcma;
+                return Ok(Box::new(CrossCorrelateComplexDouble {
+                    fft_forward,
+                    fft_inverse,
+                    multiplier: Box::new(SpectrumMulDoubleFcma::default()),
+                    mode,
+                }));
+            }
+        }
+        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
+        {
+            use crate::neon::SpectrumMulDoubleNeon;
+            Ok(Box::new(CrossCorrelateComplexDouble {
+                fft_forward,
+                fft_inverse,
+                multiplier: Box::new(SpectrumMulDoubleNeon::default()),
+                mode,
+            }))
+        }
+        #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
+        {
+            use crate::spectrum::SpectrumMultiplierDouble;
+            Ok(Box::new(CrossCorrelateComplexDouble {
                 fft_forward,
                 fft_inverse,
                 multiplier: Box::new(SpectrumMultiplierDouble::default()),

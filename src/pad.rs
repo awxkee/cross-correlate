@@ -47,3 +47,18 @@ pub(crate) fn pad_real_to_complex<V: Default + Clone + Copy>(
     }
     Ok(new_vec)
 }
+
+pub(crate) fn pad_signal<V: Default + Clone + Copy>(
+    src: &[V],
+    new_length: usize,
+) -> Result<Vec<V>, CrossCorrelateError> {
+    assert!(
+        new_length >= src.len(),
+        "Something unexpected happened, src length must be always smaller or equal than pad length"
+    );
+    let mut new_vec = try_vec![V::default(); new_length];
+    for (dst, &src) in new_vec.iter_mut().zip(src.iter()) {
+        *dst = src;
+    }
+    Ok(new_vec)
+}

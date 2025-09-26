@@ -36,6 +36,7 @@
 mod avx;
 mod cross_correlate;
 mod double;
+mod double_complex;
 mod error;
 mod fft;
 mod mode;
@@ -43,6 +44,7 @@ mod mode;
 mod neon;
 mod pad;
 mod single;
+mod single_complex;
 mod spectrum;
 #[cfg(all(target_arch = "x86_64", feature = "sse"))]
 mod sse;

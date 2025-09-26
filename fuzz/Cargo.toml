@@ -24,8 +24,22 @@ doc = false
 bench = false
 
 [[bin]]
+name = "single_complex"
+path = "single_complex/single_complex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "double"
 path = "double/double.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "complex_double"
+path = "complex_double/complex_double.rs"
 test = false
 doc = false
 bench = false

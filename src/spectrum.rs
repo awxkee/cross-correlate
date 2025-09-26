@@ -36,6 +36,7 @@ pub(crate) trait SpectrumMultiplier<V> {
 #[derive(Copy, Clone, Default, Debug)]
 #[allow(dead_code)]
 pub(crate) struct SpectrumMultiplierSingle {}
+
 #[derive(Copy, Clone, Default, Debug)]
 #[allow(dead_code)]
 pub(crate) struct SpectrumMultiplierDouble {}
