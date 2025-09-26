@@ -94,8 +94,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo install cargo-fuzz
-      - run: cargo fuzz run single --features "${{ matrix.feature }}" --manifest-path ./fuzz/Cargo.toml -- -max_total_time=14
-      - run: cargo fuzz run double --features "${{ matrix.feature }}" --manifest-path ./fuzz/Cargo.toml -- -max_total_time=14
+      - run: cargo fuzz run single --features "${{ matrix.feature }}" -- -max_total_time=14
+      - run: cargo fuzz run double --features "${{ matrix.feature }}" -- -max_total_time=14
 
   fuzz_box_x86:
     name: Fuzzing x86_64
@@ -107,5 +107,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo install cargo-fuzz
-      - run: cargo fuzz run single --features "${{ matrix.feature }}" --manifest-path ./fuzz/Cargo.toml -- -max_total_time=14
-      - run: cargo fuzz run double --features "${{ matrix.feature }}" --manifest-path ./fuzz/Cargo.toml -- -max_total_time=14
+      - run: cargo fuzz run single --features "${{ matrix.feature }}" -- -max_total_time=14
+      - run: cargo fuzz run double --features "${{ matrix.feature }}" -- -max_total_time=14
