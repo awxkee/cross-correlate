@@ -62,13 +62,6 @@ unsafe fn avx_mul_complex(a: __m256d, b: __m256d) -> __m256d {
 #[inline]
 #[target_feature(enable = "avx2", enable = "fma")]
 unsafe fn sse_fma_mul_complex(a: __m128d, b: __m128d) -> __m128d {
-    // let mut temp1 = _mm_unpacklo_pd(b, b);
-    // let mut temp2 = _mm_unpackhi_pd(b, b);
-    // temp1 = _mm_mul_pd(temp1, a);
-    // temp2 = _mm_mul_pd(temp2, a);
-    // temp2 = _mm_shuffle_pd::<0x01>(temp2, temp2);
-    // _mm_addsub_pd(temp1, temp2)
-
     let bdup = _mm_movedup_pd(b);
     let bswap = _mm_unpackhi_pd(b, b);
     let tmp = _mm_mul_pd(a, bdup);
@@ -122,8 +115,8 @@ unsafe fn mul_spectrum_in_place_f64_impl(
         let src_rem = other.chunks_exact(8).remainder();
 
         for (dst, kernel) in dst_rem.chunks_exact_mut(2).zip(src_rem.chunks_exact(2)) {
-            let a0 = _mm256_loadu_pd(dst.as_ptr() as *const f64);
-            let mut b0 = _mm256_loadu_pd(kernel.as_ptr() as *const f64);
+            let a0 = _mm256_loadu_pd(dst.as_ptr().cast());
+            let mut b0 = _mm256_loadu_pd(kernel.as_ptr().cast());
 
             b0 = _mm256_xor_pd(b0, conj_factors);
 

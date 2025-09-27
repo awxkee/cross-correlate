@@ -66,13 +66,13 @@ unsafe fn avx_interleave(a: __m256, b: __m256) -> (__m256, __m256) {
 }
 
 #[inline]
-#[target_feature(enable = "avx2")]
-unsafe fn sse_unpacklo_ps(a: __m128i) -> (__m128, __m128) {
-    let v2 = _mm_unpacklo_epi32(a, _mm_setzero_si128()); // a0 a2 b0 b2
-
-    let a = _mm_unpacklo_epi32(v2, _mm_setzero_si128()); // a0 a1 a2 a3
-    let b = _mm_unpackhi_epi32(v2, _mm_setzero_si128()); // b0 b1 ab b3
-    (_mm_castsi128_ps(a), _mm_castsi128_ps(b))
+#[target_feature(enable = "avx2", enable = "fma")]
+unsafe fn complex_mul_fma(a: __m128, b: __m128) -> __m128 {
+    let temp1 = _mm_shuffle_ps::<0xA0>(b, b);
+    let temp2 = _mm_shuffle_ps::<0xF5>(b, b);
+    let mul2 = _mm_mul_ps(a, temp2);
+    let mul2 = _mm_shuffle_ps::<0xB1>(mul2, mul2);
+    _mm_fmaddsub_ps(a, temp1, mul2)
 }
 
 #[target_feature(enable = "avx2", enable = "fma")]
@@ -141,8 +141,8 @@ unsafe fn mul_spectrum_in_place_f32_impl(
         let src_rem = other.chunks_exact(16).remainder();
 
         for (dst, kernel) in dst_rem.chunks_exact_mut(4).zip(src_rem.chunks_exact(4)) {
-            let a0 = _mm256_loadu_ps(dst.as_ptr() as *const f32);
-            let mut b0 = _mm256_loadu_ps(kernel.as_ptr() as *const f32);
+            let a0 = _mm256_loadu_ps(dst.as_ptr().cast());
+            let mut b0 = _mm256_loadu_ps(kernel.as_ptr().cast());
 
             b0 = _mm256_xor_ps(b0, conj_factors);
 
@@ -171,18 +171,7 @@ unsafe fn mul_spectrum_in_place_f32_impl(
 
             v1 = _mm_xor_si128(v1, _mm_castps_si128(_mm256_castps256_ps128(conj_factors)));
 
-            let (ar0, ai0) = sse_unpacklo_ps(v0);
-            let (br0, bi0) = sse_unpacklo_ps(v1);
-
-            let mut prod_r0 = _mm_mul_ps(ar0, br0);
-            let mut prod_i0 = _mm_mul_ps(ar0, bi0);
-            prod_r0 = _mm_fnmadd_ps(ai0, bi0, prod_r0);
-            prod_i0 = _mm_fmadd_ps(ai0, br0, prod_i0);
-
-            prod_r0 = _mm_mul_ps(prod_r0, _mm256_castps256_ps128(v_norm_factor));
-            prod_i0 = _mm_mul_ps(prod_i0, _mm256_castps256_ps128(v_norm_factor));
-
-            let lo = _mm_unpacklo_ps(prod_r0, prod_i0);
+            let lo = complex_mul_fma(_mm_castsi128_ps(v0), _mm_castsi128_ps(v1));
 
             _mm_storeu_si64(dst as *mut Complex<f32> as *mut _, _mm_castps_si128(lo));
         }

@@ -59,14 +59,14 @@ impl SpectrumMulDoubleFcma {
 
             for (dst, kernel) in source.chunks_exact_mut(4).zip(other.chunks_exact(4)) {
                 let vd0 = vld1q_f64(dst.as_ptr().cast());
-                let vd1 = vld1q_f64(dst.as_ptr().add(1).cast());
-                let vd2 = vld1q_f64(dst.as_ptr().add(2).cast());
-                let vd3 = vld1q_f64(dst.as_ptr().add(3).cast());
+                let vd1 = vld1q_f64(dst.get_unchecked(1..).as_ptr().cast());
+                let vd2 = vld1q_f64(dst.get_unchecked(2..).as_ptr().cast());
+                let vd3 = vld1q_f64(dst.get_unchecked(3..).as_ptr().cast());
 
                 let mut vk0 = vld1q_f64(kernel.as_ptr().cast());
-                let mut vk1 = vld1q_f64(kernel.as_ptr().add(1).cast());
-                let mut vk2 = vld1q_f64(kernel.as_ptr().add(2).cast());
-                let mut vk3 = vld1q_f64(kernel.as_ptr().add(3).cast());
+                let mut vk1 = vld1q_f64(kernel.get_unchecked(1..).as_ptr().cast());
+                let mut vk2 = vld1q_f64(kernel.get_unchecked(2..).as_ptr().cast());
+                let mut vk3 = vld1q_f64(kernel.get_unchecked(3..).as_ptr().cast());
 
                 vk0 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(vk0), conj_factors));
                 vk1 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(vk1), conj_factors));

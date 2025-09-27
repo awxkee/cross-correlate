@@ -52,14 +52,14 @@ impl SpectrumMultiplier<f32> for SpectrumMulSingleNeon {
 
             for (dst, kernel) in source.chunks_exact_mut(8).zip(other.chunks_exact(8)) {
                 let vd0 = vld1q_f32(dst.as_ptr().cast());
-                let vd1 = vld1q_f32(dst.as_ptr().add(2).cast());
-                let vd2 = vld1q_f32(dst.as_ptr().add(4).cast());
-                let vd3 = vld1q_f32(dst.as_ptr().add(6).cast());
+                let vd1 = vld1q_f32(dst.get_unchecked(2..).as_ptr().cast());
+                let vd2 = vld1q_f32(dst.get_unchecked(4..).as_ptr().cast());
+                let vd3 = vld1q_f32(dst.get_unchecked(6..).as_ptr().cast());
 
                 let mut vk0 = vld1q_f32(kernel.as_ptr().cast());
-                let mut vk1 = vld1q_f32(kernel.as_ptr().add(2).cast());
-                let mut vk2 = vld1q_f32(kernel.as_ptr().add(4).cast());
-                let mut vk3 = vld1q_f32(kernel.as_ptr().add(6).cast());
+                let mut vk1 = vld1q_f32(kernel.get_unchecked(2..).as_ptr().cast());
+                let mut vk2 = vld1q_f32(kernel.get_unchecked(4..).as_ptr().cast());
+                let mut vk3 = vld1q_f32(kernel.get_unchecked(6..).as_ptr().cast());
 
                 vk0 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vk0), conj_factors));
                 vk1 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vk1), conj_factors));
