@@ -44,28 +44,26 @@ impl SpectrumMultiplier<f64> for MulSpectrumDoubleAvxFma {
 #[inline]
 #[target_feature(enable = "avx2", enable = "fma")]
 unsafe fn avx_mul_complex(a: __m256d, b: __m256d) -> __m256d {
-    const fn mm_shuffle2(x: i32, y: i32) -> i32 {
-        ((x & 1) << 1) | (y & 1)
-    }
-    const SH0: i32 = mm_shuffle2(0, 1);
-    const SH1: i32 = mm_shuffle2(1, 1);
-    const SH2: i32 = mm_shuffle2(0, 0);
-    let ayx = _mm256_permute_pd::<SH0>(a); // a.yx
-    let byy = _mm256_permute_pd::<SH1>(b); // b.yy
-    let p1 = _mm256_mul_pd(ayx, byy); // a.yx * b.yy
+    // Swap real and imaginary parts of 'a' for FMA
+    let a_yx = _mm256_permute_pd::<0b0101>(a); // [a_im, a_re, b_im, b_re]
 
-    let bxx = _mm256_permute_pd::<SH2>(b); // b.xx
+    // Duplicate real and imaginary parts of 'b'
+    let b_xx = _mm256_permute_pd::<0b0000>(b); // [c_re, c_re, d_re, d_re]
+    let b_yy = _mm256_permute_pd::<0b1111>(b); // [c_im, c_im, d_im, d_im]
 
-    _mm256_fmaddsub_pd(a, bxx, p1)
+    // Compute (a_re*b_re - a_im*b_im) + i(a_re*b_im + a_im*b_re)
+    _mm256_fmaddsub_pd(a, b_xx, _mm256_mul_pd(a_yx, b_yy))
 }
 
 #[inline]
 #[target_feature(enable = "avx2", enable = "fma")]
 unsafe fn sse_fma_mul_complex(a: __m128d, b: __m128d) -> __m128d {
-    let bdup = _mm_movedup_pd(b);
-    let bswap = _mm_unpackhi_pd(b, b);
-    let tmp = _mm_mul_pd(a, bdup);
-    _mm_fmaddsub_pd(a, bswap, tmp)
+    let mut temp1 = _mm_unpacklo_pd(b, b);
+    let mut temp2 = _mm_unpackhi_pd(b, b);
+    temp1 = _mm_mul_pd(temp1, a);
+    temp2 = _mm_mul_pd(temp2, a);
+    temp2 = _mm_shuffle_pd(temp2, temp2, 0x01);
+    _mm_addsub_pd(temp1, temp2)
 }
 
 #[target_feature(enable = "avx2", enable = "fma")]

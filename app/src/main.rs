@@ -64,7 +64,7 @@ impl FftExecutor<f64> for FftCorrelatef64 {
 
 fn main() {
     let mut src = vec![
-        5.12f32, 6.2136, 7.2387, 1.52312, 2.52313, 3.52313, 4.52313, 5.23871,
+        5.12, 6.2136, 7.2387, 1.52312, 2.52313, 3.52313, 4.52313, 5.23871,
     ];
     let dst = vec![0.31421, 0.421, 0.653, 0.121];
 
@@ -72,15 +72,15 @@ fn main() {
 
     let fft_size = mode.fft_size(&src, &dst);
 
-    let mut planner = FftPlanner::<f32>::new();
+    let mut planner = FftPlanner::<f64>::new();
     let fft_forward = planner.plan_fft_forward(fft_size);
     let fft_inverse = planner.plan_fft_inverse(fft_size);
-    let correlation = Correlate::create_real_f32(
+    let correlation = Correlate::create_real_f64(
         mode,
-        Box::new(FftCorrelate {
+        Box::new(FftCorrelatef64 {
             executor: fft_forward,
         }),
-        Box::new(FftCorrelate {
+        Box::new(FftCorrelatef64 {
             executor: fft_inverse,
         }),
     )
