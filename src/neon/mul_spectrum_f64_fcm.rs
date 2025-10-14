@@ -30,8 +30,7 @@
 use crate::spectrum::SpectrumMultiplier;
 use num_complex::Complex;
 use std::arch::aarch64::{
-    vcmlaq_f64, vcmlaq_rot270_f64, vdupq_n_f64, vld1q_f64, vmulq_f64, vreinterpretq_u64_f64,
-    vst1q_f64,
+    vcmlaq_f64, vcmlaq_rot270_f64, vdupq_n_f64, vld1q_f64, vmulq_f64, vst1q_f64,
 };
 
 #[derive(Copy, Clone, Default, Debug)]
