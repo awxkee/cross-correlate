@@ -50,9 +50,6 @@ impl SpectrumMulDoubleFcma {
             let normalization_factor = 1f64 / len as f64;
             let v_norm_factor = vdupq_n_f64(normalization_factor);
 
-            static CONJ_FACTORS: [f64; 2] = [0.0, -0.0];
-            let conj_factors = vreinterpretq_u64_f64(vld1q_f64(CONJ_FACTORS.as_ptr()));
-
             let source = &mut buffer[..];
             let other = &other;
             let zero = vdupq_n_f64(0.);
@@ -63,10 +60,10 @@ impl SpectrumMulDoubleFcma {
                 let vd2 = vld1q_f64(dst.get_unchecked(2..).as_ptr().cast());
                 let vd3 = vld1q_f64(dst.get_unchecked(3..).as_ptr().cast());
 
-                let mut vk0 = vld1q_f64(kernel.as_ptr().cast());
-                let mut vk1 = vld1q_f64(kernel.get_unchecked(1..).as_ptr().cast());
-                let mut vk2 = vld1q_f64(kernel.get_unchecked(2..).as_ptr().cast());
-                let mut vk3 = vld1q_f64(kernel.get_unchecked(3..).as_ptr().cast());
+                let vk0 = vld1q_f64(kernel.as_ptr().cast());
+                let vk1 = vld1q_f64(kernel.get_unchecked(1..).as_ptr().cast());
+                let vk2 = vld1q_f64(kernel.get_unchecked(2..).as_ptr().cast());
+                let vk3 = vld1q_f64(kernel.get_unchecked(3..).as_ptr().cast());
 
                 let p0 = vmulq_f64(
                     vcmlaq_rot270_f64(vcmlaq_f64(zero, vk0, vd0), vk0, vd0),
