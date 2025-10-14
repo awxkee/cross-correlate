@@ -26,7 +26,6 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::fft_next_good_size;
 
 /// Specifies the output size for cross-correlation operations.
 ///
@@ -65,6 +64,6 @@ impl CrossCorrelationMode {
     /// calls [`fft_next_good_size`] to round up to an efficient FFT length.
     #[inline]
     pub fn fft_size<V>(self, buffer: &[V], other: &[V]) -> usize {
-        fft_next_good_size(buffer.len() + other.len() - 1)
+        buffer.len() + other.len() - 1
     }
 }

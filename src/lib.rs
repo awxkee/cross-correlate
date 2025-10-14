@@ -45,7 +45,6 @@ mod cross_correlate;
 mod double;
 mod double_complex;
 mod error;
-mod fft;
 mod mode;
 #[cfg(all(target_arch = "aarch64", feature = "neon"))]
 mod neon;
@@ -58,5 +57,4 @@ mod sse;
 
 pub use cross_correlate::{Correlate, CrossCorrelate, FftExecutor};
 pub use error::CrossCorrelateError;
-pub use fft::fft_next_good_size;
 pub use mode::CrossCorrelationMode;

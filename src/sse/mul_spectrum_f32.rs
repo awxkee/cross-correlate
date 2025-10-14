@@ -79,8 +79,8 @@ unsafe fn mul_spectrum_in_place_f32_impl(
             _mm_storeu_ps(dst.as_mut_ptr().cast(), d0);
         }
 
-        let dst_rem = value1.chunks_exact_mut(4).into_remainder();
-        let src_rem = other.chunks_exact(4).remainder();
+        let dst_rem = value1.chunks_exact_mut(2).into_remainder();
+        let src_rem = other.chunks_exact(2).remainder();
 
         for (dst, kernel) in dst_rem.iter_mut().zip(src_rem.iter()) {
             let v0 = _mm_loadu_si64(dst as *const Complex<f32> as *const _);

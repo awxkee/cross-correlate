@@ -30,8 +30,8 @@
 use crate::spectrum::SpectrumMultiplier;
 use num_complex::Complex;
 use std::arch::aarch64::{
-    vcmlaq_f64, vcmlaq_rot90_f64, vdupq_n_f64, veorq_u64, vld1q_f64, vmulq_f64,
-    vreinterpretq_f64_u64, vreinterpretq_u64_f64, vst1q_f64,
+    vcmlaq_f64, vcmlaq_rot270_f64, vdupq_n_f64, vld1q_f64, vmulq_f64, vreinterpretq_u64_f64,
+    vst1q_f64,
 };
 
 #[derive(Copy, Clone, Default, Debug)]
@@ -68,25 +68,20 @@ impl SpectrumMulDoubleFcma {
                 let mut vk2 = vld1q_f64(kernel.get_unchecked(2..).as_ptr().cast());
                 let mut vk3 = vld1q_f64(kernel.get_unchecked(3..).as_ptr().cast());
 
-                vk0 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(vk0), conj_factors));
-                vk1 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(vk1), conj_factors));
-                vk2 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(vk2), conj_factors));
-                vk3 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(vk3), conj_factors));
-
                 let p0 = vmulq_f64(
-                    vcmlaq_rot90_f64(vcmlaq_f64(zero, vd0, vk0), vd0, vk0),
+                    vcmlaq_rot270_f64(vcmlaq_f64(zero, vk0, vd0), vk0, vd0),
                     v_norm_factor,
                 );
                 let p1 = vmulq_f64(
-                    vcmlaq_rot90_f64(vcmlaq_f64(zero, vd1, vk1), vd1, vk1),
+                    vcmlaq_rot270_f64(vcmlaq_f64(zero, vk1, vd1), vk1, vd1),
                     v_norm_factor,
                 );
                 let p2 = vmulq_f64(
-                    vcmlaq_rot90_f64(vcmlaq_f64(zero, vd2, vk2), vd2, vk2),
+                    vcmlaq_rot270_f64(vcmlaq_f64(zero, vk2, vd2), vk2, vd2),
                     v_norm_factor,
                 );
                 let p3 = vmulq_f64(
-                    vcmlaq_rot90_f64(vcmlaq_f64(zero, vd3, vk3), vd3, vk3),
+                    vcmlaq_rot270_f64(vcmlaq_f64(zero, vk3, vd3), vk3, vd3),
                     v_norm_factor,
                 );
 
@@ -101,11 +96,9 @@ impl SpectrumMulDoubleFcma {
 
             for (dst, kernel) in dst_rem.iter_mut().zip(src_rem.iter()) {
                 let v0 = vld1q_f64(dst as *const Complex<f64> as *const f64);
-                let mut v1 = vld1q_f64(kernel as *const Complex<f64> as *const f64);
+                let v1 = vld1q_f64(kernel as *const Complex<f64> as *const f64);
 
-                v1 = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(v1), conj_factors));
-
-                let p0 = vcmlaq_rot90_f64(vcmlaq_f64(zero, v0, v1), v0, v1);
+                let p0 = vcmlaq_rot270_f64(vcmlaq_f64(zero, v1, v0), v1, v0);
                 let p1 = vmulq_f64(p0, v_norm_factor);
                 vst1q_f64(dst as *mut Complex<f64> as *mut f64, p1);
             }

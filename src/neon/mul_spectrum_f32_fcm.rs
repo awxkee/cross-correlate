@@ -29,10 +29,8 @@
 use crate::spectrum::SpectrumMultiplier;
 use num_complex::Complex;
 use std::arch::aarch64::{
-    vcmla_f32, vcmla_rot90_f32, vcmlaq_f32, vcmlaq_rot90_f32, vdup_n_f32, vdupq_n_f32, veor_u32,
-    veorq_u32, vget_low_f32, vget_low_u32, vld1_f32, vld1q_f32, vmul_f32, vmulq_f32,
-    vreinterpret_f32_u32, vreinterpret_u32_f32, vreinterpretq_f32_u32, vreinterpretq_u32_f32,
-    vst1_f32, vst1q_f32,
+    vcmla_f32, vcmla_rot270_f32, vcmlaq_f32, vcmlaq_rot270_f32, vdup_n_f32, vdupq_n_f32,
+    vget_low_f32, vld1_f32, vld1q_f32, vmul_f32, vmulq_f32, vst1_f32, vst1q_f32,
 };
 
 #[derive(Copy, Clone, Default, Debug)]
@@ -49,8 +47,7 @@ impl SpectrumMulSingleFcma {
     unsafe fn worker_impl(&self, buffer: &mut [Complex<f32>], other: &[Complex<f32>], len: usize) {
         unsafe {
             let normalization_factor = (1f64 / len as f64) as f32;
-            static CONJ_FACTORS: [f32; 4] = [0.0, -0.0, 0.0, -0.0];
-            let conj_factors = vreinterpretq_u32_f32(vld1q_f32(CONJ_FACTORS.as_ptr()));
+
             let v_norm_factor = vdupq_n_f32(normalization_factor);
             let source = &mut buffer[..];
             let other = &other;
@@ -62,30 +59,25 @@ impl SpectrumMulSingleFcma {
                 let vd2 = vld1q_f32(dst.get_unchecked(4..).as_ptr().cast());
                 let vd3 = vld1q_f32(dst.get_unchecked(6..).as_ptr().cast());
 
-                let mut vk0 = vld1q_f32(kernel.as_ptr().cast());
-                let mut vk1 = vld1q_f32(kernel.get_unchecked(2..).as_ptr().cast());
-                let mut vk2 = vld1q_f32(kernel.get_unchecked(4..).as_ptr().cast());
-                let mut vk3 = vld1q_f32(kernel.get_unchecked(6..).as_ptr().cast());
-
-                vk0 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vk0), conj_factors));
-                vk1 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vk1), conj_factors));
-                vk2 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vk2), conj_factors));
-                vk3 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vk3), conj_factors));
+                let vk0 = vld1q_f32(kernel.as_ptr().cast());
+                let vk1 = vld1q_f32(kernel.get_unchecked(2..).as_ptr().cast());
+                let vk2 = vld1q_f32(kernel.get_unchecked(4..).as_ptr().cast());
+                let vk3 = vld1q_f32(kernel.get_unchecked(6..).as_ptr().cast());
 
                 let p0 = vmulq_f32(
-                    vcmlaq_rot90_f32(vcmlaq_f32(zero, vd0, vk0), vd0, vk0),
+                    vcmlaq_rot270_f32(vcmlaq_f32(zero, vk0, vd0), vk0, vd0),
                     v_norm_factor,
                 );
                 let p1 = vmulq_f32(
-                    vcmlaq_rot90_f32(vcmlaq_f32(zero, vd1, vk1), vd1, vk1),
+                    vcmlaq_rot270_f32(vcmlaq_f32(zero, vk1, vd1), vk1, vd1),
                     v_norm_factor,
                 );
                 let p2 = vmulq_f32(
-                    vcmlaq_rot90_f32(vcmlaq_f32(zero, vd2, vk2), vd2, vk2),
+                    vcmlaq_rot270_f32(vcmlaq_f32(zero, vk2, vd2), vk2, vd2),
                     v_norm_factor,
                 );
                 let p3 = vmulq_f32(
-                    vcmlaq_rot90_f32(vcmlaq_f32(zero, vd3, vk3), vd3, vk3),
+                    vcmlaq_rot270_f32(vcmlaq_f32(zero, vk3, vd3), vk3, vd3),
                     v_norm_factor,
                 );
 
@@ -100,11 +92,9 @@ impl SpectrumMulSingleFcma {
 
             for (dst, kernel) in dst_rem.chunks_exact_mut(2).zip(src_rem.chunks_exact(2)) {
                 let v0 = vld1q_f32(dst.as_ptr().cast());
-                let mut v1 = vld1q_f32(kernel.as_ptr().cast());
+                let v1 = vld1q_f32(kernel.as_ptr().cast());
 
-                v1 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(v1), conj_factors));
-
-                let p0 = vcmlaq_rot90_f32(vcmlaq_f32(zero, v0, v1), v0, v1);
+                let p0 = vcmlaq_rot270_f32(vcmlaq_f32(zero, v1, v0), v1, v0);
                 let p1 = vmulq_f32(p0, v_norm_factor);
                 vst1q_f32(dst.as_mut_ptr().cast(), p1);
             }
@@ -114,14 +104,9 @@ impl SpectrumMulSingleFcma {
 
             for (dst, kernel) in dst_rem.iter_mut().zip(src_rem.iter()) {
                 let v0 = vld1_f32(dst as *const Complex<f32> as *const f32);
-                let mut v1 = vld1_f32(kernel as *const Complex<f32> as *const f32);
+                let v1 = vld1_f32(kernel as *const Complex<f32> as *const f32);
 
-                v1 = vreinterpret_f32_u32(veor_u32(
-                    vreinterpret_u32_f32(v1),
-                    vget_low_u32(conj_factors),
-                ));
-
-                let p0 = vcmla_rot90_f32(vcmla_f32(vdup_n_f32(0.), v0, v1), v0, v1);
+                let p0 = vcmla_rot270_f32(vcmla_f32(vdup_n_f32(0.), v1, v0), v1, v0);
                 let p1 = vmul_f32(p0, vget_low_f32(v_norm_factor));
                 vst1_f32(dst as *mut Complex<f32> as *mut f32, p1);
             }

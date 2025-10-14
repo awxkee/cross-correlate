@@ -26,22 +26,20 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use cross_correlate::{
-    Correlate, CrossCorrelateError, CrossCorrelationMode, FftExecutor, fft_next_good_size,
-};
+use cross_correlate::{Correlate, CrossCorrelateError, CrossCorrelationMode, FftExecutor};
 use rustfft::num_complex::Complex;
 use rustfft::{Fft, FftPlanner};
 use std::sync::Arc;
 
 struct FftCorrelate {
-    executor: Arc<dyn Fft<f32>>,
+    executor: Arc<dyn Fft<f64>>,
 }
 struct FftCorrelatef64 {
     executor: Arc<dyn Fft<f64>>,
 }
 
-impl FftExecutor<f32> for FftCorrelate {
-    fn process(&self, in_out: &mut [Complex<f32>]) -> Result<(), CrossCorrelateError> {
+impl FftExecutor<f64> for FftCorrelate {
+    fn process(&self, in_out: &mut [Complex<f64>]) -> Result<(), CrossCorrelateError> {
         self.executor.process(in_out);
         Ok(())
     }
@@ -71,6 +69,9 @@ fn main() {
     let mode = CrossCorrelationMode::Valid;
 
     let fft_size = mode.fft_size(&src, &dst);
+
+    // [9.135849419999998, 6.299764045999998, 4.989608066999998, 4.3887198852, 5.8635182073]
+    // [9.13585, 6.2997656, 4.989609, 4.388721, 5.8635187]
 
     let mut planner = FftPlanner::<f64>::new();
     let fft_forward = planner.plan_fft_forward(fft_size);
