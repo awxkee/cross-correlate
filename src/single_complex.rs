@@ -28,6 +28,7 @@
  */
 use crate::cross_correlate::FftExecutor;
 use crate::error::try_vec;
+use crate::fast_divider::DividerUsize;
 use crate::pad::pad_signal;
 use crate::spectrum::SpectrumMultiplier;
 use crate::{CrossCorrelate, CrossCorrelateError, CrossCorrelationMode};
@@ -85,8 +86,15 @@ impl CrossCorrelate<Complex<f32>> for CrossCorrelateComplexSingle {
         let offset = fft_size - lag;
         match self.mode {
             CrossCorrelationMode::Full => {
-                for (i, dst) in output.iter_mut().enumerate() {
-                    *dst = unsafe { *padded_src.get_unchecked((i + offset) % fft_size) }
+                if fft_size == 1 {
+                    for dst in output.iter_mut() {
+                        *dst = unsafe { *padded_src.get_unchecked(0) }
+                    }
+                } else {
+                    let divisor = DividerUsize::new(fft_size);
+                    for (i, dst) in output.iter_mut().enumerate() {
+                        *dst = unsafe { *padded_src.get_unchecked((i + offset) % divisor) }
+                    }
                 }
             }
             CrossCorrelationMode::Valid | CrossCorrelationMode::Same => {
@@ -95,8 +103,15 @@ impl CrossCorrelate<Complex<f32>> for CrossCorrelateComplexSingle {
                     CrossCorrelationMode::Same => (other.len() - 1) / 2,
                     CrossCorrelationMode::Full => unreachable!(),
                 };
-                for (i, dst) in output.iter_mut().enumerate() {
-                    *dst = unsafe { *padded_src.get_unchecked((start + i + offset) % fft_size) };
+                if fft_size == 1 {
+                    for dst in output.iter_mut() {
+                        *dst = unsafe { *padded_src.get_unchecked(0) }
+                    }
+                } else {
+                    let divisor = DividerUsize::new(fft_size);
+                    for (i, dst) in output.iter_mut().enumerate() {
+                        *dst = unsafe { *padded_src.get_unchecked((start + i + offset) % divisor) };
+                    }
                 }
             }
         }

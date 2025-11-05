@@ -45,6 +45,7 @@ mod cross_correlate;
 mod double;
 mod double_complex;
 mod error;
+mod fast_divider;
 mod mode;
 #[cfg(all(target_arch = "aarch64", feature = "neon"))]
 mod neon;
