@@ -33,6 +33,7 @@ use crate::single_complex::CrossCorrelateComplexSingle;
 use crate::{CrossCorrelateError, CrossCorrelationMode};
 use num_complex::Complex;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 /// Trait representing an FFT executor for a given numeric type `V`.
 ///
@@ -102,9 +103,9 @@ impl Correlate {
     ///
     pub fn create_real_f32(
         mode: CrossCorrelationMode,
-        fft_forward: Box<dyn FftExecutor<f32> + Send + Sync>,
-        fft_inverse: Box<dyn FftExecutor<f32> + Send + Sync>,
-    ) -> Result<Box<dyn CrossCorrelate<f32> + Sync + Send>, CrossCorrelateError> {
+        fft_forward: Arc<dyn FftExecutor<f32> + Send + Sync>,
+        fft_inverse: Arc<dyn FftExecutor<f32> + Send + Sync>,
+    ) -> Result<Arc<dyn CrossCorrelate<f32> + Sync + Send>, CrossCorrelateError> {
         if fft_forward.length() != fft_inverse.length() {
             return Err(CrossCorrelateError::FftSizesDoNotMatch(
                 fft_forward.length(),
@@ -117,10 +118,10 @@ impl Correlate {
                 && std::arch::is_x86_feature_detected!("fma")
             {
                 use crate::avx::MulSpectrumSingleAvxFma;
-                return Ok(Box::new(CrossCorrelateSingle {
+                return Ok(Arc::new(CrossCorrelateSingle {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumSingleAvxFma::default()),
+                    multiplier: Arc::new(MulSpectrumSingleAvxFma::default()),
                     mode,
                 }));
             }
@@ -129,10 +130,10 @@ impl Correlate {
         {
             if std::arch::is_x86_feature_detected!("sse4.2") {
                 use crate::sse::MulSpectrumSingleSse4_2;
-                return Ok(Box::new(CrossCorrelateSingle {
+                return Ok(Arc::new(CrossCorrelateSingle {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumSingleSse4_2::default()),
+                    multiplier: Arc::new(MulSpectrumSingleSse4_2::default()),
                     mode,
                 }));
             }
@@ -141,10 +142,10 @@ impl Correlate {
         {
             if std::arch::is_aarch64_feature_detected!("fcma") {
                 use crate::neon::SpectrumMulSingleFcma;
-                return Ok(Box::new(CrossCorrelateSingle {
+                return Ok(Arc::new(CrossCorrelateSingle {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(SpectrumMulSingleFcma::default()),
+                    multiplier: Arc::new(SpectrumMulSingleFcma::default()),
                     mode,
                 }));
             }
@@ -152,20 +153,20 @@ impl Correlate {
         #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             use crate::neon::SpectrumMulSingleNeon;
-            Ok(Box::new(CrossCorrelateSingle {
+            Ok(Arc::new(CrossCorrelateSingle {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMulSingleNeon::default()),
+                multiplier: Arc::new(SpectrumMulSingleNeon::default()),
                 mode,
             }))
         }
         #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
         {
             use crate::spectrum::SpectrumMultiplierSingle;
-            Ok(Box::new(CrossCorrelateSingle {
+            Ok(Arc::new(CrossCorrelateSingle {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMultiplierSingle::default()),
+                multiplier: Arc::new(SpectrumMultiplierSingle::default()),
                 mode,
             }))
         }
@@ -200,9 +201,9 @@ impl Correlate {
     ///
     pub fn create_complex_f32(
         mode: CrossCorrelationMode,
-        fft_forward: Box<dyn FftExecutor<f32> + Send + Sync>,
-        fft_inverse: Box<dyn FftExecutor<f32> + Send + Sync>,
-    ) -> Result<Box<dyn CrossCorrelate<Complex<f32>> + Sync + Send>, CrossCorrelateError> {
+        fft_forward: Arc<dyn FftExecutor<f32> + Send + Sync>,
+        fft_inverse: Arc<dyn FftExecutor<f32> + Send + Sync>,
+    ) -> Result<Arc<dyn CrossCorrelate<Complex<f32>> + Sync + Send>, CrossCorrelateError> {
         if fft_forward.length() != fft_inverse.length() {
             return Err(CrossCorrelateError::FftSizesDoNotMatch(
                 fft_forward.length(),
@@ -215,10 +216,10 @@ impl Correlate {
                 && std::arch::is_x86_feature_detected!("fma")
             {
                 use crate::avx::MulSpectrumSingleAvxFma;
-                return Ok(Box::new(CrossCorrelateComplexSingle {
+                return Ok(Arc::new(CrossCorrelateComplexSingle {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumSingleAvxFma::default()),
+                    multiplier: Arc::new(MulSpectrumSingleAvxFma::default()),
                     mode,
                 }));
             }
@@ -227,10 +228,10 @@ impl Correlate {
         {
             if std::arch::is_x86_feature_detected!("sse4.2") {
                 use crate::sse::MulSpectrumSingleSse4_2;
-                return Ok(Box::new(CrossCorrelateComplexSingle {
+                return Ok(Arc::new(CrossCorrelateComplexSingle {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumSingleSse4_2::default()),
+                    multiplier: Arc::new(MulSpectrumSingleSse4_2::default()),
                     mode,
                 }));
             }
@@ -239,10 +240,10 @@ impl Correlate {
         {
             if std::arch::is_aarch64_feature_detected!("fcma") {
                 use crate::neon::SpectrumMulSingleFcma;
-                return Ok(Box::new(CrossCorrelateComplexSingle {
+                return Ok(Arc::new(CrossCorrelateComplexSingle {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(SpectrumMulSingleFcma::default()),
+                    multiplier: Arc::new(SpectrumMulSingleFcma::default()),
                     mode,
                 }));
             }
@@ -250,20 +251,20 @@ impl Correlate {
         #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             use crate::neon::SpectrumMulSingleNeon;
-            Ok(Box::new(CrossCorrelateComplexSingle {
+            Ok(Arc::new(CrossCorrelateComplexSingle {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMulSingleNeon::default()),
+                multiplier: Arc::new(SpectrumMulSingleNeon::default()),
                 mode,
             }))
         }
         #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
         {
             use crate::spectrum::SpectrumMultiplierSingle;
-            Ok(Box::new(CrossCorrelateComplexSingle {
+            Ok(Arc::new(CrossCorrelateComplexSingle {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMultiplierSingle::default()),
+                multiplier: Arc::new(SpectrumMultiplierSingle::default()),
                 mode,
             }))
         }
@@ -298,9 +299,9 @@ impl Correlate {
     ///
     pub fn create_real_f64(
         mode: CrossCorrelationMode,
-        fft_forward: Box<dyn FftExecutor<f64> + Send + Sync>,
-        fft_inverse: Box<dyn FftExecutor<f64> + Send + Sync>,
-    ) -> Result<Box<dyn CrossCorrelate<f64> + Sync + Send>, CrossCorrelateError> {
+        fft_forward: Arc<dyn FftExecutor<f64> + Send + Sync>,
+        fft_inverse: Arc<dyn FftExecutor<f64> + Send + Sync>,
+    ) -> Result<Arc<dyn CrossCorrelate<f64> + Sync + Send>, CrossCorrelateError> {
         if fft_forward.length() != fft_inverse.length() {
             return Err(CrossCorrelateError::FftSizesDoNotMatch(
                 fft_forward.length(),
@@ -313,10 +314,10 @@ impl Correlate {
                 && std::arch::is_x86_feature_detected!("fma")
             {
                 use crate::avx::MulSpectrumDoubleAvxFma;
-                return Ok(Box::new(CrossCorrelateDouble {
+                return Ok(Arc::new(CrossCorrelateDouble {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumDoubleAvxFma::default()),
+                    multiplier: Arc::new(MulSpectrumDoubleAvxFma::default()),
                     mode,
                 }));
             }
@@ -325,10 +326,10 @@ impl Correlate {
         {
             if std::arch::is_x86_feature_detected!("sse4.2") {
                 use crate::sse::MulSpectrumDoubleSse4_2;
-                return Ok(Box::new(CrossCorrelateDouble {
+                return Ok(Arc::new(CrossCorrelateDouble {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumDoubleSse4_2::default()),
+                    multiplier: Arc::new(MulSpectrumDoubleSse4_2::default()),
                     mode,
                 }));
             }
@@ -337,10 +338,10 @@ impl Correlate {
         {
             if std::arch::is_aarch64_feature_detected!("fcma") {
                 use crate::neon::SpectrumMulDoubleFcma;
-                return Ok(Box::new(CrossCorrelateDouble {
+                return Ok(Arc::new(CrossCorrelateDouble {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(SpectrumMulDoubleFcma::default()),
+                    multiplier: Arc::new(SpectrumMulDoubleFcma::default()),
                     mode,
                 }));
             }
@@ -348,20 +349,20 @@ impl Correlate {
         #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             use crate::neon::SpectrumMulDoubleNeon;
-            Ok(Box::new(CrossCorrelateDouble {
+            Ok(Arc::new(CrossCorrelateDouble {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMulDoubleNeon::default()),
+                multiplier: Arc::new(SpectrumMulDoubleNeon::default()),
                 mode,
             }))
         }
         #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
         {
             use crate::spectrum::SpectrumMultiplierDouble;
-            Ok(Box::new(CrossCorrelateDouble {
+            Ok(Arc::new(CrossCorrelateDouble {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMultiplierDouble::default()),
+                multiplier: Arc::new(SpectrumMultiplierDouble::default()),
                 mode,
             }))
         }
@@ -396,9 +397,9 @@ impl Correlate {
     ///
     pub fn create_complex_f64(
         mode: CrossCorrelationMode,
-        fft_forward: Box<dyn FftExecutor<f64> + Send + Sync>,
-        fft_inverse: Box<dyn FftExecutor<f64> + Send + Sync>,
-    ) -> Result<Box<dyn CrossCorrelate<Complex<f64>> + Sync + Send>, CrossCorrelateError> {
+        fft_forward: Arc<dyn FftExecutor<f64> + Send + Sync>,
+        fft_inverse: Arc<dyn FftExecutor<f64> + Send + Sync>,
+    ) -> Result<Arc<dyn CrossCorrelate<Complex<f64>> + Sync + Send>, CrossCorrelateError> {
         if fft_forward.length() != fft_inverse.length() {
             return Err(CrossCorrelateError::FftSizesDoNotMatch(
                 fft_forward.length(),
@@ -411,10 +412,10 @@ impl Correlate {
                 && std::arch::is_x86_feature_detected!("fma")
             {
                 use crate::avx::MulSpectrumDoubleAvxFma;
-                return Ok(Box::new(CrossCorrelateComplexDouble {
+                return Ok(Arc::new(CrossCorrelateComplexDouble {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumDoubleAvxFma::default()),
+                    multiplier: Arc::new(MulSpectrumDoubleAvxFma::default()),
                     mode,
                 }));
             }
@@ -423,10 +424,10 @@ impl Correlate {
         {
             if std::arch::is_x86_feature_detected!("sse4.2") {
                 use crate::sse::MulSpectrumDoubleSse4_2;
-                return Ok(Box::new(CrossCorrelateComplexDouble {
+                return Ok(Arc::new(CrossCorrelateComplexDouble {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(MulSpectrumDoubleSse4_2::default()),
+                    multiplier: Arc::new(MulSpectrumDoubleSse4_2::default()),
                     mode,
                 }));
             }
@@ -435,10 +436,10 @@ impl Correlate {
         {
             if std::arch::is_aarch64_feature_detected!("fcma") {
                 use crate::neon::SpectrumMulDoubleFcma;
-                return Ok(Box::new(CrossCorrelateComplexDouble {
+                return Ok(Arc::new(CrossCorrelateComplexDouble {
                     fft_forward,
                     fft_inverse,
-                    multiplier: Box::new(SpectrumMulDoubleFcma::default()),
+                    multiplier: Arc::new(SpectrumMulDoubleFcma::default()),
                     mode,
                 }));
             }
@@ -446,20 +447,20 @@ impl Correlate {
         #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             use crate::neon::SpectrumMulDoubleNeon;
-            Ok(Box::new(CrossCorrelateComplexDouble {
+            Ok(Arc::new(CrossCorrelateComplexDouble {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMulDoubleNeon::default()),
+                multiplier: Arc::new(SpectrumMulDoubleNeon::default()),
                 mode,
             }))
         }
         #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
         {
             use crate::spectrum::SpectrumMultiplierDouble;
-            Ok(Box::new(CrossCorrelateComplexDouble {
+            Ok(Arc::new(CrossCorrelateComplexDouble {
                 fft_forward,
                 fft_inverse,
-                multiplier: Box::new(SpectrumMultiplierDouble::default()),
+                multiplier: Arc::new(SpectrumMultiplierDouble::default()),
                 mode,
             }))
         }

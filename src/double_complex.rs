@@ -32,11 +32,12 @@ use crate::pad::pad_signal;
 use crate::spectrum::SpectrumMultiplier;
 use crate::{CrossCorrelate, CrossCorrelateError, CrossCorrelationMode, FftExecutor};
 use num_complex::Complex;
+use std::sync::Arc;
 
 pub(crate) struct CrossCorrelateComplexDouble {
-    pub(crate) fft_forward: Box<dyn FftExecutor<f64> + Send + Sync>,
-    pub(crate) fft_inverse: Box<dyn FftExecutor<f64> + Send + Sync>,
-    pub(crate) multiplier: Box<dyn SpectrumMultiplier<f64> + Send + Sync>,
+    pub(crate) fft_forward: Arc<dyn FftExecutor<f64> + Send + Sync>,
+    pub(crate) fft_inverse: Arc<dyn FftExecutor<f64> + Send + Sync>,
+    pub(crate) multiplier: Arc<dyn SpectrumMultiplier<f64> + Send + Sync>,
     pub(crate) mode: CrossCorrelationMode,
 }
 

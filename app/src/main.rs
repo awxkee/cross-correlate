@@ -78,10 +78,10 @@ fn main() {
     let fft_inverse = planner.plan_fft_inverse(fft_size);
     let correlation = Correlate::create_real_f64(
         mode,
-        Box::new(FftCorrelatef64 {
+        Arc::new(FftCorrelatef64 {
             executor: fft_forward,
         }),
-        Box::new(FftCorrelatef64 {
+        Arc::new(FftCorrelatef64 {
             executor: fft_inverse,
         }),
     )

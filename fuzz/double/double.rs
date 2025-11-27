@@ -51,10 +51,10 @@ fuzz_target!(|data: Input| {
     let fft_inverse = planner.plan_fft_inverse(fft_size);
     let correlation = Correlate::create_real_f64(
         mode,
-        Box::new(FftCorrelate {
+        Arc::new(FftCorrelate {
             executor: fft_forward,
         }),
-        Box::new(FftCorrelate {
+        Arc::new(FftCorrelate {
             executor: fft_inverse,
         }),
     )
