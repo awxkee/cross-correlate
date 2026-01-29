@@ -133,4 +133,68 @@ mod tests {
             .zip(VALID.iter())
             .for_each(|(a, b)| assert!((a - b).abs() < 1e-7));
     }
+
+    #[test]
+    fn test_f32() {
+        static VALID: [f32; 5] = [
+            9.13584942,
+            6.299764045999998,
+            4.989608066999999,
+            4.388719885199999,
+            5.8635182073,
+        ];
+        static SAME: [f32; 8] = [
+            4.0952056,
+            7.0888835,
+            9.13584942,
+            6.299764045999998,
+            4.989608066999999,
+            4.388719885199999,
+            5.8635182073,
+            6.432118037299999,
+        ];
+        static FULL: [f32; 11] = [
+            0.6195199999999994,
+            4.0952056,
+            7.0888835,
+            9.13584942,
+            6.299764045999998,
+            4.989608066999999,
+            4.388719885199999,
+            5.8635182073,
+            6.432118037299999,
+            3.626709587299999,
+            1.6460550691,
+        ];
+
+        let src = vec![
+            5.12, 6.2136, 7.2387, 1.52312, 2.52313, 3.52313, 4.52313, 5.23871,
+        ];
+        let dst = vec![0.31421, 0.421, 0.653, 0.121];
+
+        let correlation_full =
+            Correlate::create_real_f32(src.len(), dst.len(), CrossCorrelationMode::Full).unwrap();
+        let full = correlation_full.correlate_managed(&src, &dst).unwrap();
+        assert_eq!(full.len(), FULL.len());
+        full.iter()
+            .zip(FULL.iter())
+            .for_each(|(a, b)| assert!((a - b).abs() < 1e-3));
+
+        let correlation_same =
+            Correlate::create_real_f32(src.len(), dst.len(), CrossCorrelationMode::Same).unwrap();
+        let same = correlation_same.correlate_managed(&src, &dst).unwrap();
+        assert_eq!(same.len(), SAME.len());
+        same.iter()
+            .zip(SAME.iter())
+            .for_each(|(a, b)| assert!((a - b).abs() < 1e-3));
+
+        let correlation_valid =
+            Correlate::create_real_f32(src.len(), dst.len(), CrossCorrelationMode::Valid).unwrap();
+        let valid = correlation_valid.correlate_managed(&src, &dst).unwrap();
+        assert_eq!(valid.len(), VALID.len());
+        valid
+            .iter()
+            .zip(VALID.iter())
+            .for_each(|(a, b)| assert!((a - b).abs() < 1e-3));
+    }
 }

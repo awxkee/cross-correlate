@@ -1,6 +1,6 @@
 [workspace]
-members = ["app"]
-exclude = ["fuzz"]
+members = ["app", "fuzz"]
+exclude = []
 
 [package]
 name = "cross_correlate"
