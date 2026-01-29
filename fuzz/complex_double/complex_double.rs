@@ -42,7 +42,7 @@ fuzz_target!(|data: Input| {
     ];
 
     let correlation = Correlate::create_complex_f64(
-        src.len(), dst.len()
+        src.len(), dst.len(),
         mode,
     )
     .unwrap();
