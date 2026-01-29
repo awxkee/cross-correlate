@@ -47,13 +47,13 @@ impl CrossCorrelationMode {
     ///
     /// The length of the correlation result depends on the chosen
     /// [`CrossCorrelationMode`] and the lengths of the input sequences.
-    pub fn get_size<V>(self, buffer: &[V], other: &[V]) -> usize {
+    pub fn get_size(self, buffer_len: usize, other_len: usize) -> usize {
         match self {
             CrossCorrelationMode::Valid => {
-                buffer.len().max(other.len()) - buffer.len().min(other.len()) + 1
+                buffer_len.max(other_len) - buffer_len.min(other_len) + 1
             }
-            CrossCorrelationMode::Same => buffer.len().max(other.len()),
-            CrossCorrelationMode::Full => buffer.len() + other.len() - 1,
+            CrossCorrelationMode::Same => buffer_len.max(other_len),
+            CrossCorrelationMode::Full => buffer_len + other_len - 1,
         }
     }
 
@@ -63,7 +63,7 @@ impl CrossCorrelationMode {
     /// cross-correlation between two real-valued input sequences. Internally it
     /// calls [`fft_next_good_size`] to round up to an efficient FFT length.
     #[inline]
-    pub fn fft_size<V>(self, buffer: &[V], other: &[V]) -> usize {
-        buffer.len() + other.len() - 1
+    pub fn fft_size(self, buffer_len: usize, other_len: usize) -> usize {
+        buffer_len + other_len - 1
     }
 }

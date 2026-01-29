@@ -26,7 +26,6 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::cross_correlate::FftExecutor;
 use crate::error::try_vec;
 use crate::fast_divider::DividerUsize;
 use crate::pad::pad_signal;
@@ -34,6 +33,7 @@ use crate::spectrum::SpectrumMultiplier;
 use crate::{CorrelateSample, CrossCorrelate, CrossCorrelateError, CrossCorrelationMode};
 use num_complex::Complex;
 use std::sync::Arc;
+use zaft::FftExecutor;
 
 pub(crate) struct CrossCorrelateComplex<T: CorrelateSample> {
     pub(crate) fft_forward: Arc<dyn FftExecutor<T> + Send + Sync>,
@@ -58,8 +58,8 @@ impl<T: CorrelateSample> CrossCorrelate<Complex<T>> for CrossCorrelateComplex<T>
                 self.fft_inverse.length(),
             ));
         }
-        let data_length = self.mode.get_size(buffer, other);
-        let fft_size = self.mode.fft_size(buffer, other);
+        let data_length = self.mode.get_size(buffer.len(), other.len());
+        let fft_size = self.mode.fft_size(buffer.len(), other.len());
 
         if fft_size != self.fft_forward.length() {
             return Err(CrossCorrelateError::FftAndBuffersSizeDoNotMatch(
@@ -77,11 +77,18 @@ impl<T: CorrelateSample> CrossCorrelate<Complex<T>> for CrossCorrelateComplex<T>
 
         let mut padded_src = pad_signal(buffer, fft_size)?;
         let mut padded_other = pad_signal(other, fft_size)?;
-        self.fft_forward.process(&mut padded_src)?;
-        self.fft_forward.process(&mut padded_other)?;
+
+        self.fft_forward
+            .execute(&mut padded_src)
+            .map_err(|x| CrossCorrelateError::FftError(x.to_string()))?;
+        self.fft_forward
+            .execute(&mut padded_other)
+            .map_err(|x| CrossCorrelateError::FftError(x.to_string()))?;
         self.multiplier
             .mul_spectrum(&mut padded_src, &padded_other, fft_size);
-        self.fft_inverse.process(&mut padded_src)?;
+        self.fft_inverse
+            .execute(&mut padded_src)
+            .map_err(|x| CrossCorrelateError::FftError(x.to_string()))?;
 
         let lag = other.len() - 1;
         let offset = fft_size - lag;
@@ -125,7 +132,7 @@ impl<T: CorrelateSample> CrossCorrelate<Complex<T>> for CrossCorrelateComplex<T>
         buffer: &[Complex<T>],
         other: &[Complex<T>],
     ) -> Result<Vec<Complex<T>>, CrossCorrelateError> {
-        let data_length = self.mode.get_size(buffer, other);
+        let data_length = self.mode.get_size(buffer.len(), other.len());
         let mut output = try_vec![Complex::<T>::default(); data_length];
         self.correlate(&mut output, buffer, other).map(|_| output)
     }

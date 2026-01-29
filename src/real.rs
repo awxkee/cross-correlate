@@ -26,17 +26,18 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::cross_correlate::FftExecutor;
 use crate::error::try_vec;
 use crate::fast_divider::DividerUsize;
-use crate::pad::pad_real_to_complex;
+use crate::pad::pad_signal;
 use crate::spectrum::SpectrumMultiplier;
 use crate::{CorrelateSample, CrossCorrelate, CrossCorrelateError, CrossCorrelationMode};
+use num_complex::Complex;
 use std::sync::Arc;
+use zaft::{C2RFftExecutor, R2CFftExecutor};
 
 pub(crate) struct CrossCorrelateReal<T: CorrelateSample> {
-    pub(crate) fft_forward: Arc<dyn FftExecutor<T> + Send + Sync>,
-    pub(crate) fft_inverse: Arc<dyn FftExecutor<T> + Send + Sync>,
+    pub(crate) fft_forward: Arc<dyn R2CFftExecutor<T> + Send + Sync>,
+    pub(crate) fft_inverse: Arc<dyn C2RFftExecutor<T> + Send + Sync>,
     pub(crate) multiplier: Arc<dyn SpectrumMultiplier<T> + Send + Sync>,
     pub(crate) mode: CrossCorrelationMode,
 }
@@ -51,18 +52,18 @@ impl<T: CorrelateSample> CrossCorrelate<T> for CrossCorrelateReal<T> {
         if buffer.is_empty() || other.is_empty() || output.is_empty() {
             return Err(CrossCorrelateError::BuffersMustNotHaveZeroSize);
         }
-        if self.fft_forward.length() != self.fft_inverse.length() {
+        if self.fft_forward.real_length() != self.fft_inverse.real_length() {
             return Err(CrossCorrelateError::FftSizesDoNotMatch(
-                self.fft_forward.length(),
-                self.fft_inverse.length(),
+                self.fft_forward.real_length(),
+                self.fft_inverse.real_length(),
             ));
         }
-        let data_length = self.mode.get_size(buffer, other);
-        let fft_size = self.mode.fft_size(buffer, other);
+        let data_length = self.mode.get_size(buffer.len(), other.len());
+        let fft_size = self.mode.fft_size(buffer.len(), other.len());
 
-        if fft_size != self.fft_forward.length() {
+        if fft_size != self.fft_forward.real_length() {
             return Err(CrossCorrelateError::FftAndBuffersSizeDoNotMatch(
-                self.fft_forward.length(),
+                self.fft_forward.real_length(),
                 fft_size,
             ));
         }
@@ -74,13 +75,23 @@ impl<T: CorrelateSample> CrossCorrelate<T> for CrossCorrelateReal<T> {
             ));
         }
 
-        let mut padded_src = pad_real_to_complex(buffer, fft_size)?;
-        let mut padded_other = pad_real_to_complex(other, fft_size)?;
-        self.fft_forward.process(&mut padded_src)?;
-        self.fft_forward.process(&mut padded_other)?;
+        let mut padded_src = pad_signal(buffer, fft_size)?;
+        let padded_other = pad_signal(other, fft_size)?;
+
+        let mut complex_src = try_vec![Complex::<T>::default(); padded_src.len() / 2 + 1];
+        let mut complex_other = try_vec![Complex::<T>::default(); padded_other.len() / 2 + 1];
+
+        self.fft_forward
+            .execute(&padded_src, &mut complex_src)
+            .map_err(|x| CrossCorrelateError::FftError(x.to_string()))?;
+        self.fft_forward
+            .execute(&padded_other, &mut complex_other)
+            .map_err(|x| CrossCorrelateError::FftError(x.to_string()))?;
         self.multiplier
-            .mul_spectrum(&mut padded_src, &padded_other, fft_size);
-        self.fft_inverse.process(&mut padded_src)?;
+            .mul_spectrum(&mut complex_src, &complex_other, fft_size);
+        self.fft_inverse
+            .execute(&complex_src, &mut padded_src)
+            .map_err(|x| CrossCorrelateError::FftError(x.to_string()))?;
 
         let lag = other.len() - 1;
         let offset = fft_size - lag;
@@ -88,12 +99,12 @@ impl<T: CorrelateSample> CrossCorrelate<T> for CrossCorrelateReal<T> {
             CrossCorrelationMode::Full => {
                 if fft_size == 1 {
                     for dst in output.iter_mut() {
-                        *dst = unsafe { padded_src.get_unchecked(0).re }
+                        *dst = unsafe { *padded_src.get_unchecked(0) }
                     }
                 } else {
                     let divisor = DividerUsize::new(fft_size);
                     for (i, dst) in output.iter_mut().enumerate() {
-                        *dst = unsafe { padded_src.get_unchecked((i + offset) % divisor).re }
+                        *dst = unsafe { *padded_src.get_unchecked((i + offset) % divisor) }
                     }
                 }
             }
@@ -105,13 +116,12 @@ impl<T: CorrelateSample> CrossCorrelate<T> for CrossCorrelateReal<T> {
                 };
                 if fft_size == 1 {
                     for dst in output.iter_mut() {
-                        *dst = unsafe { padded_src.get_unchecked(0).re }
+                        *dst = unsafe { *padded_src.get_unchecked(0) }
                     }
                 } else {
                     let divisor = DividerUsize::new(fft_size);
                     for (i, dst) in output.iter_mut().enumerate() {
-                        *dst =
-                            unsafe { padded_src.get_unchecked((start + i + offset) % divisor).re };
+                        *dst = unsafe { *padded_src.get_unchecked((start + i + offset) % divisor) };
                     }
                 }
             }
@@ -120,12 +130,8 @@ impl<T: CorrelateSample> CrossCorrelate<T> for CrossCorrelateReal<T> {
         Ok(())
     }
 
-    fn correlate_managed(
-        &self,
-        buffer: &[T],
-        other: &[T],
-    ) -> Result<Vec<T>, CrossCorrelateError> {
-        let data_length = self.mode.get_size(buffer, other);
+    fn correlate_managed(&self, buffer: &[T], other: &[T]) -> Result<Vec<T>, CrossCorrelateError> {
+        let data_length = self.mode.get_size(buffer.len(), other.len());
         let mut output = try_vec![T::default(); data_length];
         self.correlate(&mut output, buffer, other).map(|_| output)
     }

@@ -26,39 +26,7 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use cross_correlate::{Correlate, CrossCorrelateError, CrossCorrelationMode, FftExecutor};
-use rustfft::num_complex::Complex;
-use rustfft::{Fft, FftPlanner};
-use std::sync::Arc;
-
-struct FftCorrelate {
-    executor: Arc<dyn Fft<f64>>,
-}
-struct FftCorrelatef64 {
-    executor: Arc<dyn Fft<f64>>,
-}
-
-impl FftExecutor<f64> for FftCorrelate {
-    fn process(&self, in_out: &mut [Complex<f64>]) -> Result<(), CrossCorrelateError> {
-        self.executor.process(in_out);
-        Ok(())
-    }
-
-    fn length(&self) -> usize {
-        self.executor.len()
-    }
-}
-
-impl FftExecutor<f64> for FftCorrelatef64 {
-    fn process(&self, in_out: &mut [Complex<f64>]) -> Result<(), CrossCorrelateError> {
-        self.executor.process(in_out);
-        Ok(())
-    }
-
-    fn length(&self) -> usize {
-        self.executor.len()
-    }
-}
+use cross_correlate::{Correlate, CrossCorrelationMode};
 
 fn main() {
     let mut src = vec![
@@ -66,26 +34,12 @@ fn main() {
     ];
     let dst = vec![0.31421, 0.421, 0.653, 0.121];
 
-    let mode = CrossCorrelationMode::Valid;
-
-    let fft_size = mode.fft_size(&src, &dst);
+    let mode = CrossCorrelationMode::Full;
 
     // [9.135849419999998, 6.299764045999998, 4.989608066999998, 4.3887198852, 5.8635182073]
     // [9.13585, 6.2997656, 4.989609, 4.388721, 5.8635187]
 
-    let mut planner = FftPlanner::<f64>::new();
-    let fft_forward = planner.plan_fft_forward(fft_size);
-    let fft_inverse = planner.plan_fft_inverse(fft_size);
-    let correlation = Correlate::create_real_f64(
-        mode,
-        Arc::new(FftCorrelatef64 {
-            executor: fft_forward,
-        }),
-        Arc::new(FftCorrelatef64 {
-            executor: fft_inverse,
-        }),
-    )
-    .unwrap();
+    let correlation = Correlate::create_real_f64(src.len(), dst.len(), mode).unwrap();
     let corr = correlation.correlate_managed(&src, &dst).unwrap();
 
     println!("Hello, world!");

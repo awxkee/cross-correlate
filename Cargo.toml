@@ -22,15 +22,16 @@ include = ["/src/", "/README.md", "/LICENSE.md", "/LICENSE-APACHE.md"]
 [dependencies]
 num-complex = "0.4"
 num-traits = "0.2"
+zaft = "0.2.9"
 
 [features]
 default = ["neon", "avx", "sse"]
 # Enables Aarch64 NEON support
-neon = []
+neon = ["zaft/neon"]
 # Aarch64 FCMA feature, requires `nightly`
-fcma = ["neon"]
+fcma = ["neon", "zaft/fcma"]
 # Enables AVX2 support
-avx = []
+avx = ["zaft/avx"]
 # Enables SSE4.2 support
 sse = []
 

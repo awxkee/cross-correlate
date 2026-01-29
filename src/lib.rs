@@ -41,15 +41,14 @@
 
 use std::fmt::Debug;
 
-pub(crate) trait CorrelateSample: Copy + 'static + Clone + Default + Debug {
-
-}
+pub(crate) trait CorrelateSample: Copy + 'static + Clone + Default + Debug {}
 
 impl CorrelateSample for f32 {}
 impl CorrelateSample for f64 {}
 
 #[cfg(all(target_arch = "x86_64", feature = "avx"))]
 mod avx;
+mod correlate_complex;
 mod cross_correlate;
 mod error;
 mod fast_divider;
@@ -58,11 +57,80 @@ mod mode;
 mod neon;
 mod pad;
 mod real;
-mod correlate_complex;
 mod spectrum;
 #[cfg(all(target_arch = "x86_64", feature = "sse"))]
 mod sse;
 
-pub use cross_correlate::{Correlate, CrossCorrelate, FftExecutor};
+pub use cross_correlate::{Correlate, CrossCorrelate};
 pub use error::CrossCorrelateError;
 pub use mode::CrossCorrelationMode;
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_f64() {
+        static VALID: [f64; 5] = [
+            9.13584942,
+            6.299764045999998,
+            4.989608066999999,
+            4.388719885199999,
+            5.8635182073,
+        ];
+        static SAME: [f64; 8] = [
+            4.0952056,
+            7.0888835,
+            9.13584942,
+            6.299764045999998,
+            4.989608066999999,
+            4.388719885199999,
+            5.8635182073,
+            6.432118037299999,
+        ];
+        static FULL: [f64; 11] = [
+            0.6195199999999994,
+            4.0952056,
+            7.0888835,
+            9.13584942,
+            6.299764045999998,
+            4.989608066999999,
+            4.388719885199999,
+            5.8635182073,
+            6.432118037299999,
+            3.626709587299999,
+            1.6460550691,
+        ];
+
+        let src = vec![
+            5.12, 6.2136, 7.2387, 1.52312, 2.52313, 3.52313, 4.52313, 5.23871,
+        ];
+        let dst = vec![0.31421, 0.421, 0.653, 0.121];
+
+        let correlation_full =
+            Correlate::create_real_f64(src.len(), dst.len(), CrossCorrelationMode::Full).unwrap();
+        let full = correlation_full.correlate_managed(&src, &dst).unwrap();
+        assert_eq!(full.len(), FULL.len());
+        full.iter()
+            .zip(FULL.iter())
+            .for_each(|(a, b)| assert!((a - b).abs() < 1e-7));
+
+        let correlation_same =
+            Correlate::create_real_f64(src.len(), dst.len(), CrossCorrelationMode::Same).unwrap();
+        let same = correlation_same.correlate_managed(&src, &dst).unwrap();
+        assert_eq!(same.len(), SAME.len());
+        same.iter()
+            .zip(SAME.iter())
+            .for_each(|(a, b)| assert!((a - b).abs() < 1e-7));
+
+        let correlation_valid =
+            Correlate::create_real_f64(src.len(), dst.len(), CrossCorrelationMode::Valid).unwrap();
+        let valid = correlation_valid.correlate_managed(&src, &dst).unwrap();
+        assert_eq!(valid.len(), VALID.len());
+        valid
+            .iter()
+            .zip(VALID.iter())
+            .for_each(|(a, b)| assert!((a - b).abs() < 1e-7));
+    }
+}
