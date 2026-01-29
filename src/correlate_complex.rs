@@ -26,27 +26,28 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::cross_correlate::FftExecutor;
 use crate::error::try_vec;
 use crate::fast_divider::DividerUsize;
 use crate::pad::pad_signal;
 use crate::spectrum::SpectrumMultiplier;
-use crate::{CrossCorrelate, CrossCorrelateError, CrossCorrelationMode, FftExecutor};
+use crate::{CorrelateSample, CrossCorrelate, CrossCorrelateError, CrossCorrelationMode};
 use num_complex::Complex;
 use std::sync::Arc;
 
-pub(crate) struct CrossCorrelateComplexDouble {
-    pub(crate) fft_forward: Arc<dyn FftExecutor<f64> + Send + Sync>,
-    pub(crate) fft_inverse: Arc<dyn FftExecutor<f64> + Send + Sync>,
-    pub(crate) multiplier: Arc<dyn SpectrumMultiplier<f64> + Send + Sync>,
+pub(crate) struct CrossCorrelateComplex<T: CorrelateSample> {
+    pub(crate) fft_forward: Arc<dyn FftExecutor<T> + Send + Sync>,
+    pub(crate) fft_inverse: Arc<dyn FftExecutor<T> + Send + Sync>,
+    pub(crate) multiplier: Arc<dyn SpectrumMultiplier<T> + Send + Sync>,
     pub(crate) mode: CrossCorrelationMode,
 }
 
-impl CrossCorrelate<Complex<f64>> for CrossCorrelateComplexDouble {
+impl<T: CorrelateSample> CrossCorrelate<Complex<T>> for CrossCorrelateComplex<T> {
     fn correlate(
         &self,
-        output: &mut [Complex<f64>],
-        buffer: &[Complex<f64>],
-        other: &[Complex<f64>],
+        output: &mut [Complex<T>],
+        buffer: &[Complex<T>],
+        other: &[Complex<T>],
     ) -> Result<(), CrossCorrelateError> {
         if buffer.is_empty() || other.is_empty() || output.is_empty() {
             return Err(CrossCorrelateError::BuffersMustNotHaveZeroSize);
@@ -121,11 +122,11 @@ impl CrossCorrelate<Complex<f64>> for CrossCorrelateComplexDouble {
 
     fn correlate_managed(
         &self,
-        buffer: &[Complex<f64>],
-        other: &[Complex<f64>],
-    ) -> Result<Vec<Complex<f64>>, CrossCorrelateError> {
+        buffer: &[Complex<T>],
+        other: &[Complex<T>],
+    ) -> Result<Vec<Complex<T>>, CrossCorrelateError> {
         let data_length = self.mode.get_size(buffer, other);
-        let mut output = try_vec![Complex::<f64>::default(); data_length];
+        let mut output = try_vec![Complex::<T>::default(); data_length];
         self.correlate(&mut output, buffer, other).map(|_| output)
     }
 }

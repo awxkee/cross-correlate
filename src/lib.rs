@@ -39,11 +39,19 @@
     feature(stdarch_neon_fcma)
 )]
 
+use std::fmt::Debug;
+
+pub(crate) trait CorrelateSample: Copy + 'static + Clone + Default + Debug {
+
+}
+
+impl CorrelateSample for f32 {}
+impl CorrelateSample for f64 {}
+
 #[cfg(all(target_arch = "x86_64", feature = "avx"))]
 mod avx;
 mod cross_correlate;
 mod double;
-mod double_complex;
 mod error;
 mod fast_divider;
 mod mode;
@@ -51,7 +59,7 @@ mod mode;
 mod neon;
 mod pad;
 mod single;
-mod single_complex;
+mod correlate_complex;
 mod spectrum;
 #[cfg(all(target_arch = "x86_64", feature = "sse"))]
 mod sse;

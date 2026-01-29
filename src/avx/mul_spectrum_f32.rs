@@ -41,31 +41,6 @@ impl SpectrumMultiplier<f32> for MulSpectrumSingleAvxFma {
     }
 }
 
-// #[inline]
-// #[target_feature(enable = "avx2", enable = "fma")]
-// pub(crate) unsafe fn _m256_fcmul_ps(a: __m256, b: __m256) -> __m256 {
-//     // Extract real and imag parts from a
-//     let ar = _mm256_moveldup_ps(a); // duplicate even lanes (re parts)
-//     let ai = _mm256_movehdup_ps(a); // duplicate odd lanes (im parts)
-//
-//     // Swap real/imag of b for cross terms
-//     let bswap = _mm256_permute_ps::<0b10110001>(b); // [im, re, im, re, ...]
-//
-//     // re = ar*br - ai*bi
-//     // im = ar*bi + ai*br
-//     _mm256_fmaddsub_ps(ar, b, _mm256_mul_ps(ai, bswap))
-// }
-//
-// #[inline]
-// #[target_feature(enable = "avx2", enable = "fma")]
-// unsafe fn complex_mul_fma(a: __m128, b: __m128) -> __m128 {
-//     let temp1 = _mm_shuffle_ps::<0xA0>(b, b);
-//     let temp2 = _mm_shuffle_ps::<0xF5>(b, b);
-//     let mul2 = _mm_mul_ps(a, temp2);
-//     let mul2 = _mm_shuffle_ps::<0xB1>(mul2, mul2);
-//     _mm_fmaddsub_ps(a, temp1, mul2)
-// }
-
 #[target_feature(enable = "avx2", enable = "fma")]
 unsafe fn mul_spectrum_in_place_f32_impl(
     value1: &mut [Complex<f32>],
@@ -139,7 +114,7 @@ unsafe fn mul_spectrum_in_place_f32_impl(
 // a * b.conj()
 #[inline]
 #[target_feature(enable = "avx2", enable = "fma")]
-pub(crate) unsafe fn _m256_fcmul_a_by_b_conj(a: __m256, b: __m256) -> __m256 {
+pub(crate) fn _m256_fcmul_a_by_b_conj(a: __m256, b: __m256) -> __m256 {
     // Extract real and imag parts from a
     let ar = _mm256_moveldup_ps(a); // duplicate even lanes (re parts)
     let ai = _mm256_movehdup_ps(a); // duplicate odd lanes (im parts)
@@ -155,7 +130,7 @@ pub(crate) unsafe fn _m256_fcmul_a_by_b_conj(a: __m256, b: __m256) -> __m256 {
 // a * b.conj()
 #[inline]
 #[target_feature(enable = "avx2", enable = "fma")]
-unsafe fn _mm_fcmul_a_by_b_conj(a: __m128, b: __m128) -> __m128 {
+fn _mm_fcmul_a_by_b_conj(a: __m128, b: __m128) -> __m128 {
     let temp1 = _mm_shuffle_ps::<0xA0>(b, b);
     let temp2 = _mm_shuffle_ps::<0xF5>(b, b);
     let mul2 = _mm_mul_ps(a, temp2);
