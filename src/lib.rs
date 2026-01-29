@@ -51,14 +51,13 @@ impl CorrelateSample for f64 {}
 #[cfg(all(target_arch = "x86_64", feature = "avx"))]
 mod avx;
 mod cross_correlate;
-mod double;
 mod error;
 mod fast_divider;
 mod mode;
 #[cfg(all(target_arch = "aarch64", feature = "neon"))]
 mod neon;
 mod pad;
-mod single;
+mod real;
 mod correlate_complex;
 mod spectrum;
 #[cfg(all(target_arch = "x86_64", feature = "sse"))]

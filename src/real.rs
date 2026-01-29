@@ -26,26 +26,27 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::cross_correlate::FftExecutor;
 use crate::error::try_vec;
 use crate::fast_divider::DividerUsize;
 use crate::pad::pad_real_to_complex;
 use crate::spectrum::SpectrumMultiplier;
-use crate::{CrossCorrelate, CrossCorrelateError, CrossCorrelationMode, FftExecutor};
+use crate::{CorrelateSample, CrossCorrelate, CrossCorrelateError, CrossCorrelationMode};
 use std::sync::Arc;
 
-pub(crate) struct CrossCorrelateDouble {
-    pub(crate) fft_forward: Arc<dyn FftExecutor<f64> + Send + Sync>,
-    pub(crate) fft_inverse: Arc<dyn FftExecutor<f64> + Send + Sync>,
-    pub(crate) multiplier: Arc<dyn SpectrumMultiplier<f64> + Send + Sync>,
+pub(crate) struct CrossCorrelateReal<T: CorrelateSample> {
+    pub(crate) fft_forward: Arc<dyn FftExecutor<T> + Send + Sync>,
+    pub(crate) fft_inverse: Arc<dyn FftExecutor<T> + Send + Sync>,
+    pub(crate) multiplier: Arc<dyn SpectrumMultiplier<T> + Send + Sync>,
     pub(crate) mode: CrossCorrelationMode,
 }
 
-impl CrossCorrelate<f64> for CrossCorrelateDouble {
+impl<T: CorrelateSample> CrossCorrelate<T> for CrossCorrelateReal<T> {
     fn correlate(
         &self,
-        output: &mut [f64],
-        buffer: &[f64],
-        other: &[f64],
+        output: &mut [T],
+        buffer: &[T],
+        other: &[T],
     ) -> Result<(), CrossCorrelateError> {
         if buffer.is_empty() || other.is_empty() || output.is_empty() {
             return Err(CrossCorrelateError::BuffersMustNotHaveZeroSize);
@@ -118,13 +119,14 @@ impl CrossCorrelate<f64> for CrossCorrelateDouble {
 
         Ok(())
     }
+
     fn correlate_managed(
         &self,
-        buffer: &[f64],
-        other: &[f64],
-    ) -> Result<Vec<f64>, CrossCorrelateError> {
+        buffer: &[T],
+        other: &[T],
+    ) -> Result<Vec<T>, CrossCorrelateError> {
         let data_length = self.mode.get_size(buffer, other);
-        let mut output = try_vec![0.; data_length];
+        let mut output = try_vec![T::default(); data_length];
         self.correlate(&mut output, buffer, other).map(|_| output)
     }
 }

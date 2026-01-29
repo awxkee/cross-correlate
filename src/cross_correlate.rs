@@ -27,8 +27,7 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::correlate_complex::CrossCorrelateComplex;
-use crate::double::CrossCorrelateDouble;
-use crate::single::CrossCorrelateSingle;
+use crate::real::CrossCorrelateReal;
 use crate::{CrossCorrelateError, CrossCorrelationMode};
 use num_complex::Complex;
 use std::fmt::Debug;
@@ -117,7 +116,7 @@ impl Correlate {
                 && std::arch::is_x86_feature_detected!("fma")
             {
                 use crate::avx::MulSpectrumSingleAvxFma;
-                return Ok(Arc::new(CrossCorrelateSingle {
+                return Ok(Arc::new(CrossCorrelateReal {
                     fft_forward,
                     fft_inverse,
                     multiplier: Arc::new(MulSpectrumSingleAvxFma::default()),
@@ -129,7 +128,7 @@ impl Correlate {
         {
             if std::arch::is_x86_feature_detected!("sse4.2") {
                 use crate::sse::MulSpectrumSingleSse4_2;
-                return Ok(Arc::new(CrossCorrelateSingle {
+                return Ok(Arc::new(CrossCorrelateReal {
                     fft_forward,
                     fft_inverse,
                     multiplier: Arc::new(MulSpectrumSingleSse4_2::default()),
@@ -141,7 +140,7 @@ impl Correlate {
         {
             if std::arch::is_aarch64_feature_detected!("fcma") {
                 use crate::neon::SpectrumMulSingleFcma;
-                return Ok(Arc::new(CrossCorrelateSingle {
+                return Ok(Arc::new(CrossCorrelateReal {
                     fft_forward,
                     fft_inverse,
                     multiplier: Arc::new(SpectrumMulSingleFcma::default()),
@@ -152,7 +151,7 @@ impl Correlate {
         #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             use crate::neon::SpectrumMulSingleNeon;
-            Ok(Arc::new(CrossCorrelateSingle {
+            Ok(Arc::new(CrossCorrelateReal {
                 fft_forward,
                 fft_inverse,
                 multiplier: Arc::new(SpectrumMulSingleNeon::default()),
@@ -162,7 +161,7 @@ impl Correlate {
         #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
         {
             use crate::spectrum::SpectrumMultiplierSingle;
-            Ok(Arc::new(CrossCorrelateSingle {
+            Ok(Arc::new(CrossCorrelateReal {
                 fft_forward,
                 fft_inverse,
                 multiplier: Arc::new(SpectrumMultiplierSingle::default()),
@@ -313,7 +312,7 @@ impl Correlate {
                 && std::arch::is_x86_feature_detected!("fma")
             {
                 use crate::avx::MulSpectrumDoubleAvxFma;
-                return Ok(Arc::new(CrossCorrelateDouble {
+                return Ok(Arc::new(CrossCorrelateReal {
                     fft_forward,
                     fft_inverse,
                     multiplier: Arc::new(MulSpectrumDoubleAvxFma::default()),
@@ -325,7 +324,7 @@ impl Correlate {
         {
             if std::arch::is_x86_feature_detected!("sse4.2") {
                 use crate::sse::MulSpectrumDoubleSse4_2;
-                return Ok(Arc::new(CrossCorrelateDouble {
+                return Ok(Arc::new(CrossCorrelateReal {
                     fft_forward,
                     fft_inverse,
                     multiplier: Arc::new(MulSpectrumDoubleSse4_2::default()),
@@ -337,7 +336,7 @@ impl Correlate {
         {
             if std::arch::is_aarch64_feature_detected!("fcma") {
                 use crate::neon::SpectrumMulDoubleFcma;
-                return Ok(Arc::new(CrossCorrelateDouble {
+                return Ok(Arc::new(CrossCorrelateReal {
                     fft_forward,
                     fft_inverse,
                     multiplier: Arc::new(SpectrumMulDoubleFcma::default()),
@@ -348,7 +347,7 @@ impl Correlate {
         #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             use crate::neon::SpectrumMulDoubleNeon;
-            Ok(Arc::new(CrossCorrelateDouble {
+            Ok(Arc::new(CrossCorrelateReal {
                 fft_forward,
                 fft_inverse,
                 multiplier: Arc::new(SpectrumMulDoubleNeon::default()),
@@ -358,7 +357,7 @@ impl Correlate {
         #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
         {
             use crate::spectrum::SpectrumMultiplierDouble;
-            Ok(Arc::new(CrossCorrelateDouble {
+            Ok(Arc::new(CrossCorrelateReal {
                 fft_forward,
                 fft_inverse,
                 multiplier: Arc::new(SpectrumMultiplierDouble::default()),
